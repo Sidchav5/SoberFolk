@@ -10,11 +10,17 @@ import {
   Image,
   SafeAreaView,
   Dimensions,
+  ActivityIndicator,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { launchImageLibrary, ImagePickerResponse, MediaType } from 'react-native-image-picker';
+import { launchImageLibrary, ImagePickerResponse } from 'react-native-image-picker';
+
+// Configuration
+const API_BASE_URL = __DEV__ 
+  ? 'http://10.28.44.126:5000'  // Development
+  : 'https://your-production-api.com';  // Production
 
 const { width, height } = Dimensions.get('window');
 
@@ -23,8 +29,8 @@ const SignupScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const [role, setRole] = useState<'Consumer' | 'Driver'>('Consumer');
   const [gender, setGender] = useState<'Male' | 'Female' | 'Other' | null>(null);
+  const [loading, setLoading] = useState(false);
   
-  // Form state
   const [formData, setFormData] = useState({
     fullName: '',
     phoneNumber: '',
@@ -40,81 +46,65 @@ const SignupScreen: React.FC = () => {
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
   const [errors, setErrors] = useState<{[key: string]: string}>({});
 
-  // Update form data
   const updateFormData = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
   };
 
-  // Phone number validation (only digits, max 10)
   const handlePhoneNumberChange = (text: string) => {
     const digitsOnly = text.replace(/[^0-9]/g, '');
-    if (digitsOnly.length <= 10) {
-      updateFormData('phoneNumber', digitsOnly);
-    }
+    if (digitsOnly.length <= 10) updateFormData('phoneNumber', digitsOnly);
   };
 
-  // Aadhar number validation (only digits, max 12)
   const handleAadharChange = (text: string) => {
     const digitsOnly = text.replace(/[^0-9]/g, '');
-    if (digitsOnly.length <= 12) {
-      updateFormData('aadharNumber', digitsOnly);
-    }
+    if (digitsOnly.length <= 12) updateFormData('aadharNumber', digitsOnly);
   };
 
-  // Date formatting (DD/MM/YYYY)
   const handleDateChange = (text: string) => {
     const digitsOnly = text.replace(/[^0-9]/g, '');
     let formattedDate = digitsOnly;
-    
+
     if (digitsOnly.length >= 3) {
       formattedDate = `${digitsOnly.slice(0, 2)}/${digitsOnly.slice(2)}`;
     }
     if (digitsOnly.length >= 5) {
       formattedDate = `${digitsOnly.slice(0, 2)}/${digitsOnly.slice(2, 4)}/${digitsOnly.slice(4, 8)}`;
     }
-    
+
     updateFormData('dateOfBirth', formattedDate);
   };
 
-  // Calculate age from DOB
   const calculateAge = (dateString: string) => {
     const [day, month, year] = dateString.split('/').map(Number);
-    if (!day || !month || !year || year < 1900 || year > new Date().getFullYear()) {
-      return -1;
-    }
-    
+    if (!day || !month || !year || year < 1900 || year > new Date().getFullYear()) return -1;
+
     const today = new Date();
     const birthDate = new Date(year, month - 1, day);
     let age = today.getFullYear() - birthDate.getFullYear();
     const monthDiff = today.getMonth() - birthDate.getMonth();
-    
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-      age--;
-    }
-    
+
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) age--;
     return age;
   };
 
-  // Photo picker with proper typing
   const selectProfilePhoto = () => {
-    const options: ImageLibraryOptions = {
-      mediaType: 'photo',
+    const options = {
+      mediaType: 'photo' as const,
       quality: 0.8,
       maxWidth: 500,
       maxHeight: 500,
-      includeBase64: false,
+      includeBase64: true, // Include base64 for API upload
       selectionLimit: 1,
     };
 
     launchImageLibrary(options, (response: ImagePickerResponse) => {
-      if (!response.didCancel && !response.errorMessage) {
-        if (response.assets && response.assets[0] && response.assets[0].uri) {
-          setProfilePhoto(response.assets[0].uri);
-          // Clear photo error if exists
+      if (!response.didCancel && !response.errorMessage && response.assets) {
+        const asset = response.assets[0];
+        if (asset.uri) {
+          setProfilePhoto(`data:${asset.type};base64,${asset.base64}`);
           if (errors.profilePhoto) {
             setErrors(prev => ({ ...prev, profilePhoto: '' }));
           }
@@ -123,90 +113,89 @@ const SignupScreen: React.FC = () => {
     });
   };
 
-  // Form validation
   const validateForm = () => {
     const newErrors: {[key: string]: string} = {};
 
-    if (!formData.fullName.trim()) {
-      newErrors.fullName = 'Full name is required';
-    }
+    if (!formData.fullName.trim()) newErrors.fullName = 'Full name is required';
+    if (!formData.phoneNumber) newErrors.phoneNumber = 'Phone number is required';
+    else if (formData.phoneNumber.length !== 10) newErrors.phoneNumber = 'Phone number must be 10 digits';
 
-    if (!formData.phoneNumber) {
-      newErrors.phoneNumber = 'Phone number is required';
-    } else if (formData.phoneNumber.length !== 10) {
-      newErrors.phoneNumber = 'Phone number must be 10 digits';
-    }
+    if (!formData.email.trim()) newErrors.email = 'Email is required';
+    else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Please enter a valid email';
 
-    if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email';
-    }
+    if (!formData.password) newErrors.password = 'Password is required';
+    else if (formData.password.length < 6) newErrors.password = 'Password must be at least 6 characters';
 
-    if (!formData.password) {
-      newErrors.password = 'Password is required';
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
-    }
-
-    if (!formData.dateOfBirth) {
-      newErrors.dateOfBirth = 'Date of birth is required';
-    } else {
+    if (!formData.dateOfBirth) newErrors.dateOfBirth = 'Date of birth is required';
+    else {
       const age = calculateAge(formData.dateOfBirth);
-      if (age < 18) {
-        newErrors.dateOfBirth = 'You must be at least 18 years old to register';
-      } else if (age === -1) {
-        newErrors.dateOfBirth = 'Please enter a valid date (DD/MM/YYYY)';
-      }
+      if (age < 18) newErrors.dateOfBirth = 'You must be at least 18 years old';
+      else if (age === -1) newErrors.dateOfBirth = 'Enter valid date (DD/MM/YYYY)';
     }
 
-    if (!gender) {
-      newErrors.gender = 'Please select your gender';
-    }
-
-    if (!formData.address.trim()) {
-      newErrors.address = 'Address is required';
-    }
+    if (!gender) newErrors.gender = 'Please select your gender';
+    if (!formData.address.trim()) newErrors.address = 'Address is required';
 
     if (role === 'Consumer') {
-      if (!formData.aadharNumber) {
-        newErrors.aadharNumber = 'Aadhar number is required';
-      } else if (formData.aadharNumber.length !== 12) {
-        newErrors.aadharNumber = 'Aadhar number must be 12 digits';
-      }
+      if (!formData.aadharNumber) newErrors.aadharNumber = 'Aadhar number is required';
+      else if (formData.aadharNumber.length !== 12) newErrors.aadharNumber = 'Aadhar number must be 12 digits';
     }
 
     if (role === 'Driver') {
-      if (!formData.licenseNumber.trim()) {
-        newErrors.licenseNumber = 'License number is required';
-      }
-      if (!formData.aadharNumber) {
-        newErrors.aadharNumber = 'Government ID (Aadhar) is required';
-      } else if (formData.aadharNumber.length !== 12) {
-        newErrors.aadharNumber = 'Aadhar number must be 12 digits';
-      }
-      if (!formData.scooterModel.trim()) {
-        newErrors.scooterModel = 'Scooter model is required';
-      }
+      if (!formData.licenseNumber.trim()) newErrors.licenseNumber = 'License number is required';
+      if (!formData.aadharNumber) newErrors.aadharNumber = 'Government ID (Aadhar) is required';
+      else if (formData.aadharNumber.length !== 12) newErrors.aadharNumber = 'Aadhar number must be 12 digits';
+      if (!formData.scooterModel.trim()) newErrors.scooterModel = 'Scooter model is required';
     }
 
-    if (!profilePhoto) {
-      newErrors.profilePhoto = 'Profile photo is required';
-    }
+    if (!profilePhoto) newErrors.profilePhoto = 'Profile photo is required';
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  // Handle signup
-  const handleSignup = () => {
-    if (validateForm()) {
-      // Process signup
-      Alert.alert('Success', 'Account created successfully!');
-      console.log('Form Data:', formData);
-      console.log('Profile Photo:', profilePhoto);
-      console.log('Role:', role);
-      console.log('Gender:', gender);
+  const handleSignup = async () => {
+    if (!validateForm()) return;
+
+    setLoading(true);
+    try {
+      const signupData = {
+        role,
+        fullName: formData.fullName,
+        email: formData.email,
+        phoneNumber: formData.phoneNumber,
+        password: formData.password,
+        gender,
+        dateOfBirth: formData.dateOfBirth,
+        address: formData.address,
+        aadharNumber: formData.aadharNumber,
+        licenseNumber: formData.licenseNumber || null,
+        scooterModel: formData.scooterModel || null,
+        profilePhoto,
+      };
+
+      const response = await fetch(`${API_BASE_URL}/signup`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(signupData),
+      });
+
+      const data = await response.json();
+      
+      if (response.ok) {
+        Alert.alert('Success', 'Account created successfully!', [
+          { text: 'OK', onPress: () => navigation.navigate('Login') }
+        ]);
+      } else {
+        Alert.alert('Error', data.error || 'Something went wrong');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Network error. Please check your connection and try again.');
+      console.error('Signup error:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -217,49 +206,42 @@ const SignupScreen: React.FC = () => {
         <View style={[styles.decorativeCircle, styles.circle1]} />
         <View style={[styles.decorativeCircle, styles.circle2]} />
         <View style={[styles.decorativeCircle, styles.circle3]} />
-        
-        {/* Scooter Illustration */}
         <Image 
           source={{ uri: 'https://cdn-icons-png.flaticon.com/512/2972/2972185.png' }} 
           style={styles.scooterImage}
           resizeMode="contain"
         />
-        
-        {/* Abstract Wave Pattern */}
         <View style={styles.wavePattern} />
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        
         <Text style={styles.title}>Create your SoberFolks account</Text>
         <Text style={styles.subtitle}>Join our community for safe rides</Text>
 
         {/* Role Selection */}
         <View style={styles.roleContainer}>
-          <TouchableOpacity
-            style={[styles.roleButton, role === 'Consumer' && styles.roleButtonActive]}
-            onPress={() => setRole('Consumer')}
-            activeOpacity={0.8}
-          >
-            <Text style={[styles.roleText, role === 'Consumer' && styles.roleTextActive]}>
-              🛵 Consumer
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.roleButton, role === 'Driver' && styles.roleButtonActive]}
-            onPress={() => setRole('Driver')}
-            activeOpacity={0.8}
-          >
-            <Text style={[styles.roleText, role === 'Driver' && styles.roleTextActive]}>
-              🏍️ Driver
-            </Text>
-          </TouchableOpacity>
+          {['Consumer', 'Driver'].map(r => (
+            <TouchableOpacity
+              key={r}
+              style={[styles.roleButton, role === r && styles.roleButtonActive]}
+              onPress={() => setRole(r as 'Consumer' | 'Driver')}
+              disabled={loading}
+            >
+              <Text style={[styles.roleText, role === r && styles.roleTextActive]}>
+                {r === 'Consumer' ? '🛵 Consumer' : '🏍️ Driver'}
+              </Text>
+            </TouchableOpacity>
+          ))}
         </View>
 
-        {/* Profile Photo Selection */}
+        {/* Profile Photo */}
         <View style={styles.photoSection}>
           <Text style={styles.label}>Profile Photo *</Text>
-          <TouchableOpacity style={styles.photoButton} onPress={selectProfilePhoto}>
+          <TouchableOpacity 
+            style={styles.photoButton} 
+            onPress={selectProfilePhoto}
+            disabled={loading}
+          >
             {profilePhoto ? (
               <Image source={{ uri: profilePhoto }} style={styles.profileImage} />
             ) : (
@@ -272,162 +254,139 @@ const SignupScreen: React.FC = () => {
           {errors.profilePhoto && <Text style={styles.errorText}>{errors.profilePhoto}</Text>}
         </View>
 
-        {/* Form Inputs */}
+        {/* Form Fields */}
         <View style={styles.inputSection}>
           <Text style={styles.label}>Full Name *</Text>
           <TextInput
-            placeholder="Enter your full name"
-            placeholderTextColor="#888"
             style={[styles.input, errors.fullName && styles.inputError]}
+            placeholder="Enter your full name"
             value={formData.fullName}
-            onChangeText={(text) => updateFormData('fullName', text)}
+            onChangeText={text => updateFormData('fullName', text)}
+            editable={!loading}
           />
           {errors.fullName && <Text style={styles.errorText}>{errors.fullName}</Text>}
 
           <Text style={styles.label}>Gender *</Text>
           <View style={styles.genderContainer}>
-            <TouchableOpacity
-              style={[styles.genderButton, gender === 'Male' && styles.genderButtonActive]}
-              onPress={() => setGender('Male')}
-              activeOpacity={0.8}
-            >
-              <Text style={[styles.genderText, gender === 'Male' && styles.genderTextActive]}>
-                Male
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.genderButton, gender === 'Female' && styles.genderButtonActive]}
-              onPress={() => setGender('Female')}
-              activeOpacity={0.8}
-            >
-              <Text style={[styles.genderText, gender === 'Female' && styles.genderTextActive]}>
-                Female
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.genderButton, gender === 'Other' && styles.genderButtonActive]}
-              onPress={() => setGender('Other')}
-              activeOpacity={0.8}
-            >
-              <Text style={[styles.genderText, gender === 'Other' && styles.genderTextActive]}>
-                Other
-              </Text>
-            </TouchableOpacity>
+            {['Male', 'Female', 'Other'].map(g => (
+              <TouchableOpacity
+                key={g}
+                style={[styles.genderButton, gender === g && styles.genderButtonActive]}
+                onPress={() => setGender(g as 'Male' | 'Female' | 'Other')}
+                disabled={loading}
+              >
+                <Text style={[styles.genderText, gender === g && styles.genderTextActive]}>{g}</Text>
+              </TouchableOpacity>
+            ))}
           </View>
           {errors.gender && <Text style={styles.errorText}>{errors.gender}</Text>}
 
           <Text style={styles.label}>Phone Number *</Text>
           <TextInput
-            placeholder="Enter 10-digit phone number"
-            placeholderTextColor="#888"
-            keyboardType="phone-pad"
             style={[styles.input, errors.phoneNumber && styles.inputError]}
+            placeholder="10-digit phone number"
+            keyboardType="phone-pad"
             value={formData.phoneNumber}
             onChangeText={handlePhoneNumberChange}
             maxLength={10}
+            editable={!loading}
           />
-          <Text style={styles.helperText}>Only digits allowed (10 digits required)</Text>
           {errors.phoneNumber && <Text style={styles.errorText}>{errors.phoneNumber}</Text>}
 
           <Text style={styles.label}>Email *</Text>
           <TextInput
-            placeholder="Enter your email address"
-            placeholderTextColor="#888"
-            keyboardType="email-address"
             style={[styles.input, errors.email && styles.inputError]}
+            placeholder="Email address"
+            keyboardType="email-address"
             value={formData.email}
-            onChangeText={(text) => updateFormData('email', text)}
+            onChangeText={text => updateFormData('email', text)}
             autoCapitalize="none"
+            editable={!loading}
           />
           {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
 
           <Text style={styles.label}>Password *</Text>
           <TextInput
-            placeholder="Create a secure password"
-            placeholderTextColor="#888"
-            secureTextEntry
             style={[styles.input, errors.password && styles.inputError]}
+            placeholder="Password (min 6 characters)"
+            secureTextEntry
             value={formData.password}
-            onChangeText={(text) => updateFormData('password', text)}
+            onChangeText={text => updateFormData('password', text)}
+            editable={!loading}
           />
-          <Text style={styles.helperText}>Minimum 6 characters required</Text>
           {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
 
           <Text style={styles.label}>Date of Birth *</Text>
           <TextInput
-            placeholder="DD/MM/YYYY"
-            placeholderTextColor="#888"
             style={[styles.input, errors.dateOfBirth && styles.inputError]}
+            placeholder="DD/MM/YYYY"
+            keyboardType="numeric"
             value={formData.dateOfBirth}
             onChangeText={handleDateChange}
-            keyboardType="numeric"
             maxLength={10}
+            editable={!loading}
           />
-          <Text style={styles.helperText}>Must be 18+ years old to register</Text>
           {errors.dateOfBirth && <Text style={styles.errorText}>{errors.dateOfBirth}</Text>}
 
           <Text style={styles.label}>Address *</Text>
           <TextInput
-            placeholder="Enter your complete address"
-            placeholderTextColor="#888"
             style={[styles.input, styles.textArea, errors.address && styles.inputError]}
+            placeholder="Complete address"
             value={formData.address}
-            onChangeText={(text) => updateFormData('address', text)}
+            onChangeText={text => updateFormData('address', text)}
             multiline
-            numberOfLines={3}
+            editable={!loading}
           />
           {errors.address && <Text style={styles.errorText}>{errors.address}</Text>}
 
-          {/* Role Specific Inputs */}
+          {/* Role-specific Fields */}
           {role === 'Consumer' && (
             <>
               <Text style={styles.label}>Aadhar Number *</Text>
               <TextInput
-                placeholder="Enter 12-digit Aadhar number"
-                placeholderTextColor="#888"
                 style={[styles.input, errors.aadharNumber && styles.inputError]}
+                placeholder="12-digit Aadhar"
                 value={formData.aadharNumber}
                 onChangeText={handleAadharChange}
                 keyboardType="numeric"
                 maxLength={12}
+                editable={!loading}
               />
-              <Text style={styles.helperText}>Only digits allowed (12 digits required)</Text>
               {errors.aadharNumber && <Text style={styles.errorText}>{errors.aadharNumber}</Text>}
             </>
           )}
 
           {role === 'Driver' && (
             <>
-              <Text style={styles.label}>Driver's License Number *</Text>
+              <Text style={styles.label}>License Number *</Text>
               <TextInput
-                placeholder="Enter your license number"
-                placeholderTextColor="#888"
                 style={[styles.input, errors.licenseNumber && styles.inputError]}
+                placeholder="License number"
                 value={formData.licenseNumber}
-                onChangeText={(text) => updateFormData('licenseNumber', text)}
+                onChangeText={text => updateFormData('licenseNumber', text)}
+                editable={!loading}
               />
               {errors.licenseNumber && <Text style={styles.errorText}>{errors.licenseNumber}</Text>}
 
-              <Text style={styles.label}>Government ID Proof (Aadhar) *</Text>
+              <Text style={styles.label}>Aadhar Number *</Text>
               <TextInput
-                placeholder="Enter 12-digit Aadhar number"
-                placeholderTextColor="#888"
                 style={[styles.input, errors.aadharNumber && styles.inputError]}
+                placeholder="12-digit Aadhar"
                 value={formData.aadharNumber}
                 onChangeText={handleAadharChange}
                 keyboardType="numeric"
                 maxLength={12}
+                editable={!loading}
               />
-              <Text style={styles.helperText}>Only digits allowed (12 digits required)</Text>
               {errors.aadharNumber && <Text style={styles.errorText}>{errors.aadharNumber}</Text>}
 
               <Text style={styles.label}>Scooter Model *</Text>
               <TextInput
-                placeholder="Enter your scooter model"
-                placeholderTextColor="#888"
                 style={[styles.input, errors.scooterModel && styles.inputError]}
+                placeholder="Scooter model"
                 value={formData.scooterModel}
-                onChangeText={(text) => updateFormData('scooterModel', text)}
+                onChangeText={text => updateFormData('scooterModel', text)}
+                editable={!loading}
               />
               {errors.scooterModel && <Text style={styles.errorText}>{errors.scooterModel}</Text>}
             </>
@@ -435,25 +394,35 @@ const SignupScreen: React.FC = () => {
         </View>
 
         {/* Signup Button */}
-        <TouchableOpacity style={styles.signupButton} onPress={handleSignup} activeOpacity={0.9}>
+        <TouchableOpacity 
+          style={[styles.signupButton, loading && styles.disabledButton]} 
+          onPress={handleSignup}
+          disabled={loading}
+        >
           <LinearGradient
-            colors={['#FF6B6B', '#6E44FF']}
+            colors={loading ? ['#ccc', '#999'] : ['#FF6B6B', '#6E44FF']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.signupGradient}
           >
-            <Text style={styles.signupText}>Create Account</Text>
+            {loading ? (
+              <ActivityIndicator color="#fff" size="small" />
+            ) : (
+              <Text style={styles.signupText}>Create Account</Text>
+            )}
           </LinearGradient>
         </TouchableOpacity>
 
         {/* Login Redirect */}
         <View style={styles.loginRedirect}>
           <Text style={styles.redirectText}>Already have an account?</Text>
-          <TouchableOpacity onPress={() => navigation.navigate("Login")}>
-            <Text style={styles.link}> Sign In</Text>
+          <TouchableOpacity 
+            onPress={() => navigation.navigate('Login')}
+            disabled={loading}
+          >
+            <Text style={[styles.link, loading && styles.disabledText]}> Sign In</Text>
           </TouchableOpacity>
         </View>
-
       </ScrollView>
     </SafeAreaView>
   );
@@ -677,12 +646,6 @@ const styles = StyleSheet.create({
     height: 80,
     textAlignVertical: "top",
   },
-  helperText: {
-    fontSize: 12,
-    color: "#666",
-    marginTop: 4,
-    marginLeft: 4,
-  },
   errorText: {
     fontSize: 12,
     color: "#d32f2f",
@@ -699,6 +662,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
+  },
+  disabledButton: {
+    opacity: 0.7,
   },
   signupGradient: {
     paddingVertical: 18,
@@ -723,5 +689,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#FF6B6B",
     fontWeight: "600",
+  },
+  disabledText: {
+    opacity: 0.5,
   },
 });

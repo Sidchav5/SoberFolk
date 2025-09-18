@@ -9,17 +9,99 @@ import {
   SafeAreaView,
   ScrollView,
   Image,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
+
+// Configuration
+const API_BASE_URL = __DEV__ 
+  ? 'http://10.28.44.126:5000'  // Development
+  : 'https://your-production-api.com';  // Production
 
 const { width, height } = Dimensions.get('window');
 
 const LoginScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const [role, setRole] = useState<'Consumer' | 'Driver'>('Consumer');
-  const [emailOrPhone, setEmailOrPhone] = useState("");
-  const [password, setPassword] = useState("");
+  const [emailOrPhone, setEmailOrPhone] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<{[key: string]: string}>({});
+
+  const validateInputs = () => {
+    const newErrors: {[key: string]: string} = {};
+
+    if (!emailOrPhone.trim()) {
+      newErrors.emailOrPhone = 'Email or phone number is required';
+    }
+
+    if (!password.trim()) {
+      newErrors.password = 'Password is required';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleLogin = async () => {
+  if (!validateInputs()) return;
+
+  setLoading(true);
+  try {
+    const response = await fetch(`${API_BASE_URL}/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        role,
+        email: emailOrPhone, // Backend will check both email and phone
+        password,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      // ✅ Save JWT token + user info
+      await AsyncStorage.setItem('authToken', data.token);
+      await AsyncStorage.setItem('currentUser', JSON.stringify(data.user));
+      await AsyncStorage.setItem('userRole', role);
+
+      Alert.alert('Success', `Welcome back, ${data.user.fullName}!`, [
+        {
+          text: 'OK',
+          onPress: () => {
+            // Navigate to appropriate dashboard
+            navigation.reset({
+              index: 0,
+              routes: [{ name: role === 'Consumer' ? 'ConsumerHome' : 'DriverScreen' }],
+            });
+          }
+        }
+      ]);
+    } else {
+      Alert.alert('Login Failed', data.error || 'Invalid credentials');
+      setErrors({ general: data.error || 'Invalid credentials' });
+    }
+  } catch (error) {
+    Alert.alert('Error', 'Network error. Please check your connection and try again.');
+    console.error('Login error:', error);
+    setErrors({ general: 'Network error occurred' });
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+  const clearError = (field: string) => {
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: '' }));
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -29,92 +111,131 @@ const LoginScreen: React.FC = () => {
         <View style={[styles.decorativeCircle, styles.circle2]} />
         <View style={[styles.decorativeCircle, styles.circle3]} />
         
-        {/* Scooter Illustration */}
         <Image 
           source={{ uri: 'https://cdn-icons-png.flaticon.com/512/2972/2972185.png' }} 
           style={styles.scooterImage}
           resizeMode="contain"
         />
         
-        {/* Abstract Wave Pattern */}
         <View style={styles.wavePattern} />
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
+        <Text style={styles.title}>Welcome Back</Text>
+        <Text style={styles.subtitle}>Sign in to your SoberFolks account</Text>
 
-        <Text style={styles.title}>Login</Text>
+        
 
         {/* Role Selection */}
         <View style={styles.roleContainer}>
           <TouchableOpacity
             style={[styles.roleButton, role === 'Consumer' && styles.roleButtonActive]}
             onPress={() => setRole('Consumer')}
+            disabled={loading}
           >
-            <Text style={[styles.roleText, role === 'Consumer' && styles.roleTextActive]}>Consumer</Text>
+            <Text style={[styles.roleText, role === 'Consumer' && styles.roleTextActive]}>
+              🛵 Consumer
+            </Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.roleButton, role === 'Driver' && styles.roleButtonActive]}
             onPress={() => setRole('Driver')}
+            disabled={loading}
           >
-            <Text style={[styles.roleText, role === 'Driver' && styles.roleTextActive]}>Driver</Text>
+            <Text style={[styles.roleText, role === 'Driver' && styles.roleTextActive]}>
+              🏍️ Driver
+            </Text>
           </TouchableOpacity>
         </View>
 
+        {/* Error Message */}
+        {errors.general && (
+          <View style={styles.errorContainer}>
+            <Text style={styles.generalErrorText}>{errors.general}</Text>
+          </View>
+        )}
+
         {/* Inputs */}
-        <Text style={styles.label}>Phone or Email</Text>
+        <Text style={styles.label}>Phone or Email *</Text>
         <TextInput
           placeholder="Enter your phone or email"
           placeholderTextColor="#666"
-          style={styles.input}
+          style={[styles.input, errors.emailOrPhone && styles.inputError]}
           value={emailOrPhone}
-          onChangeText={setEmailOrPhone}
+          onChangeText={(text) => {
+            setEmailOrPhone(text);
+            clearError('emailOrPhone');
+            clearError('general');
+          }}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          editable={!loading}
         />
+        {errors.emailOrPhone && <Text style={styles.errorText}>{errors.emailOrPhone}</Text>}
 
-        <Text style={styles.label}>Password</Text>
+        <Text style={styles.label}>Password *</Text>
         <TextInput
           placeholder="Enter your password"
           placeholderTextColor="#666"
-          style={styles.input}
+          style={[styles.input, errors.password && styles.inputError]}
           secureTextEntry
           value={password}
-          onChangeText={setPassword}
+          onChangeText={(text) => {
+            setPassword(text);
+            clearError('password');
+            clearError('general');
+          }}
+          editable={!loading}
         />
+        {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
 
-        {/* Forgot Password */}
-        <TouchableOpacity style={styles.forgotPassword}>
-          <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+        <TouchableOpacity style={styles.forgotPassword} disabled={loading}>
+          <Text style={[styles.forgotPasswordText, loading && styles.disabledText]}>
+            Forgot Password?
+          </Text>
         </TouchableOpacity>
 
         {/* Login Button */}
-        <TouchableOpacity style={styles.loginButton}>
+        <TouchableOpacity 
+          style={[styles.loginButton, loading && styles.disabledButton]} 
+          onPress={handleLogin}
+          disabled={loading}
+        >
           <LinearGradient
-            colors={['#FF6B6B', '#6E44FF']}
+            colors={loading ? ['#ccc', '#999'] : ['#FF6B6B', '#6E44FF']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.loginGradient}
           >
-            <Text style={styles.loginText}>Login</Text>
+            {loading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator color="#fff" size="small" />
+                <Text style={styles.loadingText}>Signing In...</Text>
+              </View>
+            ) : (
+              <Text style={styles.loginText}>Sign In</Text>
+            )}
           </LinearGradient>
         </TouchableOpacity>
 
         {/* Divider */}
         <View style={styles.divider}>
           <View style={styles.dividerLine} />
-          <Text style={styles.dividerText}>or continue with</Text>
+          <Text style={styles.dividerText}>or</Text>
           <View style={styles.dividerLine} />
         </View>
 
-        {/* Social Login Options */}
+        {/* Social Login Placeholder */}
         <View style={styles.socialLoginContainer}>
-          <TouchableOpacity style={[styles.socialButton, styles.googleButton]}>
+          <TouchableOpacity style={[styles.socialButton, styles.googleButton]} disabled={loading}>
             <Image 
-              source={{ uri: 'https://cdn-icons-png.flaticon.com/512/300/300221.png' }} 
+              source={{ uri: 'https://developers.google.com/identity/images/g-logo.png' }}
               style={styles.socialIcon}
             />
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.socialButton, styles.facebookButton]}>
+          <TouchableOpacity style={[styles.socialButton, styles.facebookButton]} disabled={loading}>
             <Image 
-              source={{ uri: 'https://cdn-icons-png.flaticon.com/512/733/733547.png' }} 
+              source={{ uri: 'https://upload.wikimedia.org/wikipedia/commons/5/51/Facebook_f_logo_%282019%29.svg' }}
               style={styles.socialIcon}
             />
           </TouchableOpacity>
@@ -123,11 +244,15 @@ const LoginScreen: React.FC = () => {
         {/* Signup Link */}
         <View style={styles.signupContainer}>
           <Text style={styles.signupText}>New to SoberFolks?</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
-            <Text style={styles.signupLink}> Create an account</Text>
+          <TouchableOpacity 
+            onPress={() => navigation.navigate('Signup')}
+            disabled={loading}
+          >
+            <Text style={[styles.signupLink, loading && styles.disabledText]}>
+              {' '}Create an account
+            </Text>
           </TouchableOpacity>
         </View>
-
       </ScrollView>
     </SafeAreaView>
   );
@@ -202,10 +327,17 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#6E44FF',
     textAlign: 'center',
-    marginBottom: 30,
+    marginBottom: 8,
     textShadowColor: 'rgba(110, 68, 255, 0.2)',
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 4,
+  },
+  subtitle: {
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 30,
+    color: '#666',
+    fontWeight: '400',
   },
   roleContainer: {
     flexDirection: 'row',
@@ -245,11 +377,25 @@ const styles = StyleSheet.create({
   roleTextActive: {
     color: '#fff',
   },
-  label: {
+  errorContainer: {
+    backgroundColor: '#ffebee',
+    borderColor: '#f44336',
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 15,
+  },
+  generalErrorText: {
+    color: '#d32f2f',
     fontSize: 14,
-    color: '#333',
-    marginBottom: 6,
+    textAlign: 'center',
     fontWeight: '500',
+  },
+  label: {
+    fontSize: 16,
+    color: '#6E44FF',
+    marginBottom: 8,
+    fontWeight: '600',
     marginLeft: 5,
   },
   input: {
@@ -258,15 +404,26 @@ const styles = StyleSheet.create({
     borderColor: '#E8E6FF',
     borderWidth: 2,
     paddingHorizontal: 15,
-    paddingVertical: 12,
+    paddingVertical: 14,
     marginBottom: 15,
     fontSize: 16,
-    color: '#000',
+    color: '#333',
     shadowColor: '#6E44FF',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
     elevation: 2,
+  },
+  inputError: {
+    borderColor: '#d32f2f',
+  },
+  errorText: {
+    fontSize: 12,
+    color: '#d32f2f',
+    marginTop: -10,
+    marginBottom: 10,
+    marginLeft: 4,
+    fontWeight: '500',
   },
   forgotPassword: {
     alignSelf: 'flex-end',
@@ -287,6 +444,9 @@ const styles = StyleSheet.create({
     elevation: 8,
     marginTop: 10,
   },
+  disabledButton: {
+    opacity: 0.7,
+  },
   loginGradient: {
     paddingVertical: 16,
     alignItems: 'center',
@@ -296,6 +456,16 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 18,
     fontWeight: '700',
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  loadingText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
   },
   divider: {
     flexDirection: 'row',
@@ -308,9 +478,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#E8E6FF',
   },
   dividerText: {
-    marginHorizontal: 10,
+    marginHorizontal: 15,
     color: '#666',
     fontSize: 14,
+    fontWeight: '500',
   },
   socialLoginContainer: {
     flexDirection: 'row',
@@ -349,12 +520,15 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   signupText: {
-    fontSize: 14,
-    color: '#555',
+    fontSize: 16,
+    color: '#666',
   },
   signupLink: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#FF6B6B',
     fontWeight: '600',
+  },
+  disabledText: {
+    opacity: 0.5,
   },
 });

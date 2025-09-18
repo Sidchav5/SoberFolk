@@ -1,3 +1,4 @@
+// App.tsx
 import React, { useState, useEffect } from 'react';
 import { SafeAreaView, ScrollView, StyleSheet, StatusBar, Platform } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
@@ -8,11 +9,13 @@ import Benefits from './src/components/Benefits';
 import Footer from './src/components/Footer';
 import LoginScreen from './src/components/LoginScreen';
 import SignupScreen from './src/components/SignupScreen';
+import DriverScreen from './src/components/DriverScreen';
 
 type RootStackParamList = {
   Home: undefined;
   Login: undefined;
   Signup: undefined;
+  DriverScreen: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -21,7 +24,7 @@ const App: React.FC = () => {
   const [showOnboarding, setShowOnboarding] = useState<boolean>(true);
 
   useEffect(() => {
-    setShowOnboarding(true); // For demo purposes
+    setShowOnboarding(true); // For demo purposes, always show onboarding on app start
   }, []);
 
   const handleOnboardingComplete = (): void => {
@@ -66,6 +69,7 @@ const App: React.FC = () => {
 
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Signup" component={SignupScreen} />
+        <Stack.Screen name="DriverScreen" component={DriverScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
