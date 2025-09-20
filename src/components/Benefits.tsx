@@ -50,7 +50,7 @@ const Benefits: React.FC = () => {
       <View style={styles.headerContainer}>
         <Text style={styles.heading}>Why Choose SoberFolks?</Text>
         <Text style={styles.subheading}>
-          Discover the tools and support that make your journey successful
+          Experience seamless urban mobility with our eco-friendly scooter service
         </Text>
         <View style={styles.headerLine} />
       </View>
@@ -107,8 +107,9 @@ const Benefits: React.FC = () => {
           end={{x: 1, y: 1}}
           style={styles.ctaGradient}
         >
-          <Text style={styles.ctaText}>Ready to start your transformation?</Text>
-          <Text style={styles.ctaSubtext}>Join thousands who've found their path to wellness</Text>
+          <Text style={styles.ctaText}>Ready to ride on demand?</Text>
+<Text style={styles.ctaSubtext}>Experience the convenience of instant scooter rides across the city</Text>
+
         </LinearGradient>
       </View>
     </View>

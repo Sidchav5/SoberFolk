@@ -18,7 +18,7 @@ import { useNavigation } from '@react-navigation/native';
 
 // Configuration
 const API_BASE_URL = __DEV__ 
-  ? 'http://10.28.44.126:5000'  // Development
+  ? 'http://10.224.185.126:5000'  // Development
   : 'https://your-production-api.com';  // Production
 
 const { width, height } = Dimensions.get('window');
@@ -134,7 +134,7 @@ const LoginScreen: React.FC = () => {
             disabled={loading}
           >
             <Text style={[styles.roleText, role === 'Consumer' && styles.roleTextActive]}>
-              🛵 Consumer
+               Consumer
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -143,7 +143,7 @@ const LoginScreen: React.FC = () => {
             disabled={loading}
           >
             <Text style={[styles.roleText, role === 'Driver' && styles.roleTextActive]}>
-              🏍️ Driver
+              Driver
             </Text>
           </TouchableOpacity>
         </View>

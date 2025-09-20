@@ -40,7 +40,7 @@ const HeroSection: React.FC = () => {
         {/* Enhanced Subtitle */}
         <View style={styles.subtitleContainer}>
           <View style={styles.subtitleLine} />
-          <Text style={styles.subtitle}>Your journey to clarity and wellness starts here</Text>
+          <Text style={styles.subtitle}>Get Ready for Reliable Ride !!</Text>
           <View style={styles.subtitleLine} />
         </View>
         

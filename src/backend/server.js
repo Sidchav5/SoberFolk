@@ -5,6 +5,7 @@ const cors = require("cors");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const db = require("./db"); // Your db.js connection file
+require("dotenv").config();
 
 const app = express();
 const PORT = 5000;
@@ -17,8 +18,8 @@ app.use(
       "http://localhost:3000",
       "http://10.0.2.2:3000",
       "http://127.0.0.1:3000",
-      "http://10.28.44.126:3000",
-      "http://10.28.44.126:5000",
+      "http://10.224.185.126:3000",
+      "http://10.224.185.126:5000",
     ],
     credentials: true,
   })
@@ -219,7 +220,9 @@ app.post("/login", (req, res) => {
       });
 
       // Return safe user object
-      const safeUser = {
+     const safeUser =
+  role === "Driver"
+    ? {
         id: user.id,
         fullName: user.full_name,
         email: user.email,
@@ -227,9 +230,27 @@ app.post("/login", (req, res) => {
         gender: user.gender,
         dateOfBirth: user.date_of_birth,
         address: user.address,
+        aadharNumber: user.aadhar_number,
+        licenseNumber: user.license_number,
+        scooterModel: user.scooter_model,
+        profilePhoto: user.profile_photo,
+        isAvailable: user.is_available === 1,
+        role,
+      }
+    : {
+        id: user.id,
+        fullName: user.full_name,
+        email: user.email,
+        phone: user.phone,
+        gender: user.gender,
+        dateOfBirth: user.date_of_birth,
+        address: user.address,
+        aadharNumber: user.aadhar_number,
         profilePhoto: user.profile_photo,
         role,
       };
+
+
 
       res.json({
         message: "Login successful",
@@ -277,6 +298,63 @@ app.get("/profile/:role/:id", authenticateToken, (req, res) => {
     };
 
     res.json({ user: safeUser });
+  });
+});
+
+// -------- Update Driver Availability --------
+app.put("/driver/:id/availability", authenticateToken, (req, res) => {
+  const { id } = req.params;
+  const { isAvailable } = req.body;
+
+  if (req.user.role !== "Driver" || req.user.id != id) {
+    return res.status(403).json({ error: "Unauthorized" });
+  }
+
+  const query = "UPDATE drivers SET is_available = ? WHERE id = ?";
+  db.query(query, [isAvailable ? 1 : 0, id], (err) => {
+    if (err) return res.status(500).json({ error: "Failed to update availability" });
+    res.json({ message: "Availability updated successfully", isAvailable });
+  });
+});
+
+// -------- Get Logged-in Driver Profile (JWT only) --------
+app.get("/api/driver/profile", authenticateToken, (req, res) => {
+  console.log("Decoded JWT:", req.user);
+
+  if (req.user.role !== "Driver") {
+    return res.status(403).json({ error: "Access denied. Not a driver account" });
+  }
+
+  const query = `SELECT * FROM drivers WHERE id = ?`;
+  console.log("Fetching driver with ID:", req.user.id);
+
+  db.query(query, [req.user.id], (err, results) => {
+    if (err) {
+      console.error("DB Error:", err);
+      return res.status(500).json({ error: "Failed to fetch profile" });
+    }
+
+    if (results.length === 0) {
+      console.log("No driver found with ID:", req.user.id);
+      return res.status(404).json({ error: "Driver not found" });
+    }
+
+    const driver = results[0];
+    res.json({
+      id: driver.id,
+      fullName: driver.full_name,
+      email: driver.email,
+      phone: driver.phone,
+      gender: driver.gender,
+      dateOfBirth: driver.date_of_birth,
+      address: driver.address,
+      aadharNumber: driver.aadhar_number,
+      licenseNumber: driver.license_number,
+      scooterModel: driver.scooter_model,
+      profilePhoto: driver.profile_photo,
+      isAvailable: driver.is_available === 1,
+      role: "Driver",
+    });
   });
 });
 

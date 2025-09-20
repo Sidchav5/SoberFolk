@@ -228,7 +228,7 @@ const SignupScreen: React.FC = () => {
               disabled={loading}
             >
               <Text style={[styles.roleText, role === r && styles.roleTextActive]}>
-                {r === 'Consumer' ? '🛵 Consumer' : '🏍️ Driver'}
+                {r === 'Consumer' ? ' Consumer' : ' Driver'}
               </Text>
             </TouchableOpacity>
           ))}
