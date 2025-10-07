@@ -1,4 +1,4 @@
-// server.js - JWT integrated version
+// server.js - Enhanced with Location Services
 
 const express = require("express");
 const cors = require("cors");
@@ -9,7 +9,7 @@ require("dotenv").config();
 
 const app = express();
 const PORT = 5000;
-const JWT_SECRET = process.env.JWT_SECRET || "3cd55083223f2738ec3b05d633a6c3e5559d153c6aabf1eab3438e2ece9188adc5bb5701b468f51c08e95c8b1a2522154b5863d0f3e7e5f8d444e84fb3e873bf"; // Use dotenv in production
+const JWT_SECRET = process.env.JWT_SECRET || "3cd55083223f2738ec3b05d633a6c3e5559d153c6aabf1eab3438e2ece9188adc5bb5701b468f51c08e95c8b1a2522154b5863d0f3e7e5f8d444e84fb3e873bf";
 
 // -------- Middleware --------
 app.use(
@@ -18,37 +18,150 @@ app.use(
       "http://localhost:3000",
       "http://10.0.2.2:3000",
       "http://127.0.0.1:3000",
-      "http://10.224.185.126:3000",
-      "http://10.224.185.126:5000",
+      "http://10.139.99.126:3000",
+      "http://10.139.99.126:5000",
     ],
     credentials: true,
   })
 );
 
-app.use(express.json({ limit: "10mb" })); // handles JSON & base64 images
+app.use(express.json({ limit: "10mb" }));
 
 // -------- JWT Middleware --------
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers["authorization"];
-  const token = authHeader && authHeader.split(" ")[1]; // Expect Bearer <token>
+  const token = authHeader && authHeader.split(" ")[1];
 
   if (!token)
     return res.status(401).json({ error: "Access denied. Token missing" });
 
   jwt.verify(token, JWT_SECRET, (err, user) => {
     if (err) return res.status(403).json({ error: "Invalid or expired token" });
-    req.user = user; // decoded token payload
+    req.user = user;
     next();
   });
 };
 
-// -------- Utility --------
+// -------- Utility Functions --------
 const convertDateFormat = (ddmmyyyy) => {
   const [day, month, year] = ddmmyyyy.split("/");
   return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
 };
 
-// -------- Signup API --------
+// Calculate distance between two coordinates (Haversine formula)
+const calculateDistance = (lat1, lon1, lat2, lon2) => {
+  const R = 6371; // Earth's radius in kilometers
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+    Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c; // Distance in kilometers
+};
+
+// Calculate fare based on distance
+const calculateFare = (distanceKm) => {
+  const baseFare = 50; // Base fare in rupees
+  const perKmRate = 15; // Rate per km
+  return Math.round(baseFare + (distanceKm * perKmRate));
+};
+
+// Google Maps API configuration
+const GOOGLE_MAPS_API_KEY = "AIzaSyBWnoFhMsZv2J5JXiqWbtRmS-ToAGymdTo";
+const axios = require('axios'); // Add this import at the top of your file
+
+// Real geocoding function using Google Maps API
+const geocodeAddress = async (address) => {
+  try {
+    const encodedAddress = encodeURIComponent(address.trim());
+    const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodedAddress}&key=${GOOGLE_MAPS_API_KEY}`;
+    
+    console.log(`🔍 Geocoding address: "${address}"`);
+    
+    const response = await axios.get(url);
+    
+    if (response.data.status === 'OK' && response.data.results.length > 0) {
+      const result = response.data.results[0];
+      const location = result.geometry.location;
+      
+      console.log(`✅ Geocoding successful: ${location.lat}, ${location.lng}`);
+      
+      return {
+        lat: location.lat,
+        lng: location.lng,
+        formatted_address: result.formatted_address,
+        place_id: result.place_id,
+        types: result.types
+      };
+    } else if (response.data.status === 'ZERO_RESULTS') {
+      console.warn(`⚠️ No results found for address: "${address}"`);
+      throw new Error(`Location not found: ${address}`);
+    } else {
+      console.error(`❌ Geocoding API error: ${response.data.status}`);
+      throw new Error(`Geocoding failed: ${response.data.status}`);
+    }
+  } catch (error) {
+    console.error('❌ Geocoding error:', error.message);
+    
+    // If it's a network error or API error, throw it
+    if (error.response) {
+      throw new Error(`Geocoding API error: ${error.response.status}`);
+    } else if (error.request) {
+      throw new Error('Network error while geocoding');
+    } else {
+      throw error;
+    }
+  }
+};
+
+// Real reverse geocoding function using Google Maps API
+const reverseGeocode = async (latitude, longitude) => {
+  try {
+    const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${GOOGLE_MAPS_API_KEY}`;
+    
+    console.log(`🔍 Reverse geocoding coordinates: ${latitude}, ${longitude}`);
+    
+    const response = await axios.get(url);
+    
+    if (response.data.status === 'OK' && response.data.results.length > 0) {
+      const result = response.data.results[0];
+      
+      console.log(`✅ Reverse geocoding successful: ${result.formatted_address}`);
+      
+      return {
+        formatted_address: result.formatted_address,
+        place_id: result.place_id,
+        address_components: result.address_components,
+        types: result.types
+      };
+    } else if (response.data.status === 'ZERO_RESULTS') {
+      console.warn(`⚠️ No address found for coordinates: ${latitude}, ${longitude}`);
+      return {
+        formatted_address: `Location near ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`,
+        place_id: null,
+        address_components: [],
+        types: []
+      };
+    } else {
+      console.error(`❌ Reverse geocoding API error: ${response.data.status}`);
+      throw new Error(`Reverse geocoding failed: ${response.data.status}`);
+    }
+  } catch (error) {
+    console.error('❌ Reverse geocoding error:', error.message);
+    
+    // Fallback to basic location description
+    return {
+      formatted_address: `Location near ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`,
+      place_id: null,
+      address_components: [],
+      types: []
+    };
+  }
+};
+
+// -------- Original Authentication APIs --------
 app.post("/signup", async (req, res) => {
   const {
     role,
@@ -188,7 +301,6 @@ app.post("/signup", async (req, res) => {
   }
 });
 
-// -------- Login API with JWT --------
 app.post("/login", (req, res) => {
   const { role, email, password } = req.body;
 
@@ -214,12 +326,10 @@ app.post("/login", (req, res) => {
       const isMatch = await bcrypt.compare(password, user.password);
       if (!isMatch) return res.status(400).json({ error: "Invalid password" });
 
-      // Create JWT
       const token = jwt.sign({ id: user.id, role }, JWT_SECRET, {
         expiresIn: "7d",
       });
 
-      // Return safe user object
      const safeUser =
   role === "Driver"
     ? {
@@ -250,8 +360,6 @@ app.post("/login", (req, res) => {
         role,
       };
 
-
-
       res.json({
         message: "Login successful",
         token,
@@ -264,14 +372,617 @@ app.post("/login", (req, res) => {
   });
 });
 
-// -------- Protected Profile API --------
+// -------- LOCATION-RELATED APIs --------
+
+// Update User Location (for both consumers and drivers) - Enhanced with reverse geocoding
+app.post("/api/location/update", authenticateToken, async (req, res) => {
+  const { latitude, longitude, address } = req.body;
+  const { id, role } = req.user;
+
+  if (!latitude || !longitude) {
+    return res.status(400).json({ error: "Latitude and longitude are required" });
+  }
+
+  // Validate coordinates
+  if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+    return res.status(400).json({ error: "Invalid coordinates" });
+  }
+
+  let locationAddress = address;
+  
+  // If no address provided, get it from reverse geocoding
+  if (!locationAddress) {
+    try {
+      const reverseGeoResult = await reverseGeocode(latitude, longitude);
+      locationAddress = reverseGeoResult.formatted_address;
+      console.log(`📍 Auto-resolved address: ${locationAddress}`);
+    } catch (error) {
+      console.warn('Failed to reverse geocode, using coordinates as address');
+      locationAddress = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+    }
+  }
+
+  const table = role === "Consumer" ? "consumer_locations" : "driver_locations";
+  
+  // First, try to update existing location
+  const updateQuery = `
+    UPDATE ${table} 
+    SET latitude = ?, longitude = ?, address = ?, updated_at = NOW() 
+    WHERE user_id = ?
+  `;
+
+  db.query(updateQuery, [latitude, longitude, locationAddress, id], (err, result) => {
+    if (err) {
+      console.error("Location update error:", err);
+      return res.status(500).json({ error: "Failed to update location" });
+    }
+
+    // If no rows were updated, insert new location
+    if (result.affectedRows === 0) {
+      const insertQuery = `
+        INSERT INTO ${table} (user_id, latitude, longitude, address, created_at, updated_at)
+        VALUES (?, ?, ?, ?, NOW(), NOW())
+      `;
+
+      db.query(insertQuery, [id, latitude, longitude, locationAddress], (insertErr) => {
+        if (insertErr) {
+          console.error("Location insert error:", insertErr);
+          return res.status(500).json({ error: "Failed to save location" });
+        }
+
+        res.json({
+          message: "Location saved successfully",
+          location: { 
+            latitude: parseFloat(latitude), 
+            longitude: parseFloat(longitude), 
+            address: locationAddress 
+          }
+        });
+      });
+    } else {
+      res.json({
+        message: "Location updated successfully",
+        location: { 
+          latitude: parseFloat(latitude), 
+          longitude: parseFloat(longitude), 
+          address: locationAddress 
+        }
+      });
+    }
+  });
+});
+
+// Get User's Current Location
+app.get("/api/location/current", authenticateToken, (req, res) => {
+  const { id, role } = req.user;
+  const table = role === "Consumer" ? "consumer_locations" : "driver_locations";
+
+  const query = `SELECT * FROM ${table} WHERE user_id = ? ORDER BY updated_at DESC LIMIT 1`;
+
+  db.query(query, [id], (err, results) => {
+    if (err) {
+      console.error("Get location error:", err);
+      return res.status(500).json({ error: "Failed to fetch location" });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({ error: "No location data found" });
+    }
+
+    const location = results[0];
+    res.json({
+      latitude: parseFloat(location.latitude),
+      longitude: parseFloat(location.longitude),
+      address: location.address,
+      lastUpdated: location.updated_at
+    });
+  });
+});
+
+// Get Nearby Drivers (for consumers)
+app.get("/api/drivers/nearby", authenticateToken, (req, res) => {
+  const { latitude, longitude, radius = 5 } = req.query; // radius in km
+
+  if (req.user.role !== "Consumer") {
+    return res.status(403).json({ error: "Only consumers can view nearby drivers" });
+  }
+
+  if (!latitude || !longitude) {
+    return res.status(400).json({ error: "Latitude and longitude are required" });
+  }
+
+  const query = `
+    SELECT 
+      d.id, d.full_name, d.phone, d.scooter_model, d.profile_photo,
+      dl.latitude, dl.longitude, dl.address, dl.updated_at
+    FROM drivers d
+    JOIN driver_locations dl ON d.id = dl.user_id
+    WHERE d.is_available = 1 
+    AND dl.updated_at > DATE_SUB(NOW(), INTERVAL 30 MINUTE)
+  `;
+
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("Nearby drivers error:", err);
+      return res.status(500).json({ error: "Failed to fetch nearby drivers" });
+    }
+
+    const userLat = parseFloat(latitude);
+    const userLon = parseFloat(longitude);
+
+    // Filter drivers within radius and add distance
+    const nearbyDrivers = results
+      .map(driver => {
+        const driverLat = parseFloat(driver.latitude);
+        const driverLon = parseFloat(driver.longitude);
+        const distance = calculateDistance(userLat, userLon, driverLat, driverLon);
+
+        return {
+          id: driver.id,
+          fullName: driver.full_name,
+          phone: driver.phone,
+          scooterModel: driver.scooter_model,
+          profilePhoto: driver.profile_photo,
+          location: {
+            latitude: driverLat,
+            longitude: driverLon,
+            address: driver.address
+          },
+          distance: Math.round(distance * 100) / 100, // Round to 2 decimal places
+          lastSeen: driver.updated_at
+        };
+      })
+      .filter(driver => driver.distance <= parseFloat(radius))
+      .sort((a, b) => a.distance - b.distance);
+
+    res.json({
+      nearbyDrivers,
+      searchRadius: parseFloat(radius),
+      totalFound: nearbyDrivers.length
+    });
+  });
+});
+
+// -------- RIDE BOOKING APIs --------
+
+// Book a Ride
+app.post("/api/rides/book", authenticateToken, async (req, res) => {
+  const { pickupLocation, dropLocation, pickupAddress, dropAddress } = req.body;
+  const consumerId = req.user.id;
+
+  if (req.user.role !== "Consumer") {
+    return res.status(403).json({ error: "Only consumers can book rides" });
+  }
+
+  if (!pickupLocation?.latitude || !pickupLocation?.longitude || 
+      !dropLocation?.latitude || !dropLocation?.longitude) {
+    return res.status(400).json({ error: "Pickup and drop coordinates are required" });
+  }
+
+  try {
+    // Calculate distance and fare
+    const distance = calculateDistance(
+      pickupLocation.latitude, pickupLocation.longitude,
+      dropLocation.latitude, dropLocation.longitude
+    );
+    const fare = calculateFare(distance);
+
+    // Insert ride booking
+    const rideQuery = `
+      INSERT INTO rides (
+        consumer_id, pickup_latitude, pickup_longitude, pickup_address,
+        drop_latitude, drop_longitude, drop_address, distance_km, fare,
+        status, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NOW())
+    `;
+
+    db.query(rideQuery, [
+      consumerId,
+      pickupLocation.latitude, pickupLocation.longitude, pickupAddress,
+      dropLocation.latitude, dropLocation.longitude, dropAddress,
+      distance, fare
+    ], (err, result) => {
+      if (err) {
+        console.error("Ride booking error:", err);
+        return res.status(500).json({ error: "Failed to book ride" });
+      }
+
+      res.status(201).json({
+        message: "Ride booked successfully",
+        rideId: result.insertId,
+        ride: {
+          id: result.insertId,
+          pickupLocation,
+          dropLocation,
+          pickupAddress,
+          dropAddress,
+          distance: Math.round(distance * 100) / 100,
+          fare,
+          status: 'pending',
+          createdAt: new Date().toISOString()
+        }
+      });
+    });
+  } catch (error) {
+    console.error("Booking error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Get User's Ride History
+app.get("/api/rides/history", authenticateToken, (req, res) => {
+  const { id, role } = req.user;
+  const { page = 1, limit = 10 } = req.query;
+  const offset = (page - 1) * limit;
+
+  let query, params;
+
+  if (role === "Consumer") {
+    query = `
+      SELECT 
+        r.*, d.full_name as driver_name, d.phone as driver_phone, d.scooter_model
+      FROM rides r
+      LEFT JOIN drivers d ON r.driver_id = d.id
+      WHERE r.consumer_id = ?
+      ORDER BY r.created_at DESC
+      LIMIT ? OFFSET ?
+    `;
+    params = [id, parseInt(limit), parseInt(offset)];
+  } else {
+    query = `
+      SELECT 
+        r.*, c.full_name as consumer_name, c.phone as consumer_phone
+      FROM rides r
+      LEFT JOIN consumers c ON r.consumer_id = c.id
+      WHERE r.driver_id = ?
+      ORDER BY r.created_at DESC
+      LIMIT ? OFFSET ?
+    `;
+    params = [id, parseInt(limit), parseInt(offset)];
+  }
+
+  db.query(query, params, (err, results) => {
+    if (err) {
+      console.error("Ride history error:", err);
+      return res.status(500).json({ error: "Failed to fetch ride history" });
+    }
+
+    const rides = results.map(ride => ({
+      id: ride.id,
+      pickup: {
+        latitude: parseFloat(ride.pickup_latitude),
+        longitude: parseFloat(ride.pickup_longitude),
+        address: ride.pickup_address
+      },
+      drop: {
+        latitude: parseFloat(ride.drop_latitude),
+        longitude: parseFloat(ride.drop_longitude),
+        address: ride.drop_address
+      },
+      distance: parseFloat(ride.distance_km),
+      fare: ride.fare,
+      status: ride.status,
+      createdAt: ride.created_at,
+      startedAt: ride.started_at,
+      completedAt: ride.completed_at,
+      ...(role === "Consumer" ? {
+        driver: ride.driver_id ? {
+          name: ride.driver_name,
+          phone: ride.driver_phone,
+          scooterModel: ride.scooter_model
+        } : null
+      } : {
+        consumer: {
+          name: ride.consumer_name,
+          phone: ride.consumer_phone
+        }
+      })
+    }));
+
+    res.json({
+      rides,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total: rides.length
+      }
+    });
+  });
+});
+
+// Accept Ride (for drivers)
+app.post("/api/rides/:rideId/accept", authenticateToken, (req, res) => {
+  const { rideId } = req.params;
+  const driverId = req.user.id;
+
+  if (req.user.role !== "Driver") {
+    return res.status(403).json({ error: "Only drivers can accept rides" });
+  }
+
+  // Check if ride exists and is pending
+  const checkQuery = "SELECT * FROM rides WHERE id = ? AND status = 'pending'";
+  
+  db.query(checkQuery, [rideId], (err, results) => {
+    if (err) {
+      return res.status(500).json({ error: "Database error" });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({ error: "Ride not found or already accepted" });
+    }
+
+    // Update ride with driver and change status
+    const updateQuery = `
+      UPDATE rides 
+      SET driver_id = ?, status = 'accepted', accepted_at = NOW() 
+      WHERE id = ? AND status = 'pending'
+    `;
+
+    db.query(updateQuery, [driverId, rideId], (updateErr, updateResult) => {
+      if (updateErr) {
+        return res.status(500).json({ error: "Failed to accept ride" });
+      }
+
+      if (updateResult.affectedRows === 0) {
+        return res.status(409).json({ error: "Ride was already accepted by another driver" });
+      }
+
+      res.json({
+        message: "Ride accepted successfully",
+        rideId: parseInt(rideId)
+      });
+    });
+  });
+});
+
+// Start Ride (for drivers)
+app.post("/api/rides/:rideId/start", authenticateToken, (req, res) => {
+  const { rideId } = req.params;
+  const driverId = req.user.id;
+
+  if (req.user.role !== "Driver") {
+    return res.status(403).json({ error: "Only drivers can start rides" });
+  }
+
+  const updateQuery = `
+    UPDATE rides 
+    SET status = 'in_progress', started_at = NOW() 
+    WHERE id = ? AND driver_id = ? AND status = 'accepted'
+  `;
+
+  db.query(updateQuery, [rideId, driverId], (err, result) => {
+    if (err) {
+      return res.status(500).json({ error: "Failed to start ride" });
+    }
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Ride not found or cannot be started" });
+    }
+
+    res.json({
+      message: "Ride started successfully",
+      rideId: parseInt(rideId)
+    });
+  });
+});
+
+// Complete Ride (for drivers)
+app.post("/api/rides/:rideId/complete", authenticateToken, (req, res) => {
+  const { rideId } = req.params;
+  const driverId = req.user.id;
+
+  if (req.user.role !== "Driver") {
+    return res.status(403).json({ error: "Only drivers can complete rides" });
+  }
+
+  const updateQuery = `
+    UPDATE rides 
+    SET status = 'completed', completed_at = NOW() 
+    WHERE id = ? AND driver_id = ? AND status = 'in_progress'
+  `;
+
+  db.query(updateQuery, [rideId, driverId], (err, result) => {
+    if (err) {
+      return res.status(500).json({ error: "Failed to complete ride" });
+    }
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Ride not found or cannot be completed" });
+    }
+
+    res.json({
+      message: "Ride completed successfully",
+      rideId: parseInt(rideId)
+    });
+  });
+});
+
+// Enhanced Geocode Address to Coordinates with Google Maps API
+app.post("/api/geocode", authenticateToken, async (req, res) => {
+  const { address } = req.body;
+
+  if (!address || !address.trim()) {
+    return res.status(400).json({ error: "Address is required" });
+  }
+
+  try {
+    const result = await geocodeAddress(address.trim());
+    
+    res.json({
+      success: true,
+      address: address.trim(),
+      coordinates: {
+        latitude: result.lat,
+        longitude: result.lng
+      },
+      formatted_address: result.formatted_address,
+      place_id: result.place_id,
+      types: result.types
+    });
+  } catch (error) {
+    console.error("Geocoding error:", error.message);
+    
+    res.status(400).json({ 
+      success: false,
+      error: error.message || "Failed to geocode address",
+      address: address.trim()
+    });
+  }
+});
+
+// Enhanced Reverse Geocode Coordinates to Address with Google Maps API
+app.post("/api/reverse-geocode", authenticateToken, async (req, res) => {
+  const { latitude, longitude } = req.body;
+
+  if (!latitude || !longitude) {
+    return res.status(400).json({ error: "Latitude and longitude are required" });
+  }
+
+  // Validate coordinates
+  if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+    return res.status(400).json({ error: "Invalid coordinates" });
+  }
+
+  try {
+    const result = await reverseGeocode(latitude, longitude);
+
+    res.json({
+      success: true,
+      coordinates: { 
+        latitude: parseFloat(latitude), 
+        longitude: parseFloat(longitude) 
+      },
+      formatted_address: result.formatted_address,
+      place_id: result.place_id,
+      address_components: result.address_components,
+      types: result.types
+    });
+  } catch (error) {
+    console.error("Reverse geocoding error:", error.message);
+    
+    // Still return a basic response even if Google API fails
+    res.json({
+      success: false,
+      coordinates: { 
+        latitude: parseFloat(latitude), 
+        longitude: parseFloat(longitude) 
+      },
+      formatted_address: `Location near ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`,
+      place_id: null,
+      error: error.message
+    });
+  }
+});
+
+// New API: Get Places Suggestions (Google Places Autocomplete)
+app.post("/api/places/autocomplete", authenticateToken, async (req, res) => {
+  const { input, location, radius = 50000 } = req.body; // radius in meters
+
+  if (!input || !input.trim()) {
+    return res.status(400).json({ error: "Search input is required" });
+  }
+
+  try {
+    let url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(input.trim())}&key=${GOOGLE_MAPS_API_KEY}`;
+    
+    // Add location bias if provided
+    if (location && location.latitude && location.longitude) {
+      url += `&location=${location.latitude},${location.longitude}&radius=${radius}`;
+    }
+    
+    // Restrict to India (optional - remove if you want global results)
+    url += '&components=country:in';
+    
+    console.log(`🔍 Places autocomplete for: "${input}"`);
+    
+    const response = await axios.get(url);
+    
+    if (response.data.status === 'OK') {
+      const suggestions = response.data.predictions.map(prediction => ({
+        place_id: prediction.place_id,
+        description: prediction.description,
+        main_text: prediction.structured_formatting.main_text,
+        secondary_text: prediction.structured_formatting.secondary_text,
+        types: prediction.types
+      }));
+
+      res.json({
+        success: true,
+        suggestions,
+        status: response.data.status
+      });
+    } else {
+      console.warn(`⚠️ Places API warning: ${response.data.status}`);
+      res.json({
+        success: false,
+        suggestions: [],
+        status: response.data.status,
+        error: response.data.error_message || 'No suggestions found'
+      });
+    }
+  } catch (error) {
+    console.error('Places autocomplete error:', error.message);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch place suggestions',
+      suggestions: []
+    });
+  }
+});
+
+// New API: Get Place Details from Place ID
+app.post("/api/places/details", authenticateToken, async (req, res) => {
+  const { place_id } = req.body;
+
+  if (!place_id) {
+    return res.status(400).json({ error: "Place ID is required" });
+  }
+
+  try {
+    const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${place_id}&fields=geometry,formatted_address,name,types&key=${GOOGLE_MAPS_API_KEY}`;
+    
+    console.log(`📍 Getting place details for: ${place_id}`);
+    
+    const response = await axios.get(url);
+    
+    if (response.data.status === 'OK') {
+      const place = response.data.result;
+      
+      res.json({
+        success: true,
+        place_id: place_id,
+        name: place.name,
+        formatted_address: place.formatted_address,
+        coordinates: {
+          latitude: place.geometry.location.lat,
+          longitude: place.geometry.location.lng
+        },
+        types: place.types
+      });
+    } else {
+      console.error(`❌ Place details API error: ${response.data.status}`);
+      res.status(400).json({
+        success: false,
+        error: `Failed to get place details: ${response.data.status}`,
+        place_id: place_id
+      });
+    }
+  } catch (error) {
+    console.error('Place details error:', error.message);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch place details'
+    });
+  }
+});
+
+// -------- Original Profile APIs --------
 app.get("/profile/:role/:id", authenticateToken, (req, res) => {
   const { role, id } = req.params;
   if (!["Consumer", "Driver"].includes(role)) {
     return res.status(400).json({ error: "Invalid role" });
   }
 
-  // Ensure token matches requested profile
   if (req.user.role !== role || req.user.id != id) {
     return res.status(403).json({ error: "Unauthorized access" });
   }
@@ -301,7 +1012,6 @@ app.get("/profile/:role/:id", authenticateToken, (req, res) => {
   });
 });
 
-// -------- Update Driver Availability --------
 app.put("/driver/:id/availability", authenticateToken, (req, res) => {
   const { id } = req.params;
   const { isAvailable } = req.body;
@@ -317,7 +1027,6 @@ app.put("/driver/:id/availability", authenticateToken, (req, res) => {
   });
 });
 
-// -------- Get Logged-in Driver Profile (JWT only) --------
 app.get("/api/driver/profile", authenticateToken, (req, res) => {
   console.log("Decoded JWT:", req.user);
 
@@ -363,7 +1072,14 @@ app.get("/health", (req, res) => {
   res.json({
     status: "OK",
     timestamp: new Date().toISOString(),
-    server: "SoberFolks API",
+    server: "SoberFolks API with Location Services",
+    features: [
+      "Authentication",
+      "Location Tracking",
+      "Ride Booking",
+      "Driver Matching",
+      "Geocoding"
+    ]
   });
 });
 
@@ -373,12 +1089,17 @@ app.use((error, req, res, next) => {
   res.status(500).json({ error: "Something went wrong!" });
 });
 
-// -------- 404 Handler --------
 app.use((req, res) => {
   res.status(404).json({ error: "API endpoint not found" });
 });
 
 // -------- Start Server --------
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`✅ SoberFolks API running at http://0.0.0.0:${PORT}`);
+  console.log(`✅ SoberFolks API with Location Services running at http://0.0.0.0:${PORT}`);
+  console.log(`📍 Location features enabled:`);
+  console.log(`   - Real-time location tracking`);
+  console.log(`   - Nearby driver matching`);
+  console.log(`   - Distance-based fare calculation`);
+  console.log(`   - Geocoding services`);
+  console.log(`   - Ride booking and management`);
 });

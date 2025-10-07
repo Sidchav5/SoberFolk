@@ -18,7 +18,7 @@ import { useNavigation } from '@react-navigation/native';
 
 // Configuration
 const API_BASE_URL = __DEV__ 
-  ? 'http://10.224.185.126:5000'  // Development
+  ? 'http://10.139.99.126:5000'  // Development
   : 'https://your-production-api.com';  // Production
 
 const { width, height } = Dimensions.get('window');

@@ -15,7 +15,7 @@ import { useNavigation } from "@react-navigation/native";
 import LinearGradient from "react-native-linear-gradient";
 
 const API_BASE_URL = __DEV__ 
-  ? "http://10.224.185.126:5000" 
+  ? "http://10.139.99.126:5000" 
   : "https://your-production-api.com";
 
 const DriverScreen: React.FC = () => {

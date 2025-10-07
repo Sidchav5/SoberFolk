@@ -1,8 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- Existing permissions -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.CAMERA" />
+    
+    <!-- Location permissions - ADD THESE -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    
+    <!-- Optional: Background location (only if you need location when app is not active) -->
+    <!-- <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" /> -->
+
     <application
       android:name=".MainApplication"
       android:label="@string/app_name"
@@ -11,6 +21,16 @@
       android:allowBackup="false"
       android:theme="@style/AppTheme"
       android:supportsRtl="true">
+      
+      <!-- Google Maps API Key -->
+      <meta-data
+        android:name="com.google.android.geo.API_KEY"
+        android:value="AIzaSyBWnoFhMsZv2J5JXiqWbtRmS-ToAGymdTo"/>
+      
+      <!-- Required for Maps SDK for Android -->
+      <uses-library
+        android:name="org.apache.http.legacy"
+        android:required="false" />
       <activity
         android:name=".MainActivity"
         android:label="@string/app_name"

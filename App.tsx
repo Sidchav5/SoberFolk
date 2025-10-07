@@ -10,12 +10,14 @@ import Footer from './src/components/Footer';
 import LoginScreen from './src/components/LoginScreen';
 import SignupScreen from './src/components/SignupScreen';
 import DriverScreen from './src/components/DriverScreen';
+import ConsumerHome from './src/components/ConsumerHome';
 
 type RootStackParamList = {
   Home: undefined;
   Login: undefined;
   Signup: undefined;
   DriverScreen: undefined;
+  ConsumerHome: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -70,6 +72,7 @@ const App: React.FC = () => {
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Signup" component={SignupScreen} />
         <Stack.Screen name="DriverScreen" component={DriverScreen} />
+        <Stack.Screen name="ConsumerHome" component={ConsumerHome} />
       </Stack.Navigator>
     </NavigationContainer>
   );
