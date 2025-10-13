@@ -45,52 +45,9 @@ const DriverScreen: React.FC = () => {
     // Active ride state
     const [activeRide, setActiveRide] = useState<any>(null);
   // Hardcoded ride data
-  const hardcodedRides = [
-    {
-      id: 1,
-      pickup: "MG Road, Bangalore",
-      drop: "Koramangala 5th Block",
-      fare: 185,
-      rating: 4.8,
-      date: "2025-01-15",
-      time: "14:30",
-      distance: "4.2 km",
-      duration: "18 min"
-    },
-    {
-      id: 2,
-      pickup: "Indiranagar Metro Station",
-      drop: "HSR Layout",
-      fare: 220,
-      rating: 4.5,
-      date: "2025-01-14",
-      time: "09:15",
-      distance: "5.7 km",
-      duration: "22 min"
-    },
-    {
-      id: 3,
-      pickup: "Whitefield Main Road",
-      drop: "Marathahalli Bridge",
-      fare: 150,
-      rating: 4.9,
-      date: "2025-01-13",
-      time: "17:45",
-      distance: "3.5 km",
-      duration: "15 min"
-    },
-    {
-      id: 4,
-      pickup: "Jayanagar 4th Block",
-      drop: "BTM Layout",
-      fare: 120,
-      rating: 4.7,
-      date: "2025-01-12",
-      time: "11:20",
-      distance: "2.8 km",
-      duration: "12 min"
-    }
-  ];
+  // Replace the hardcoded rides with:
+const [recentRides, setRecentRides] = useState<any[]>([]);
+const [isLoadingHistory, setIsLoadingHistory] = useState(false);
 
   // Handle Android Back Button
   useEffect(() => {
@@ -242,7 +199,19 @@ const DriverScreen: React.FC = () => {
       setLocationLoading(false);
     }
   };
-
+  const fetchRideHistory = async () => {
+    try {
+      setIsLoadingHistory(true);
+      const token = await AsyncStorage.getItem("authToken");
+      const res = await fetch(`${API_BASE_URL}/api/rides/history?page=1&limit=20`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (res.ok) setRecentRides(data.rides || []);
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  };
   // Fetch Stored Location from Server
   const fetchStoredLocation = async () => {
     try {
@@ -301,6 +270,7 @@ const DriverScreen: React.FC = () => {
     fetchProfile();
     fetchStoredLocation();
     fetchActiveRide();
+    fetchRideHistory(); 
   }, []);
 
   // Auto-update location when driver becomes available
@@ -503,7 +473,8 @@ const DriverScreen: React.FC = () => {
                 if (response.ok) {
                   Alert.alert("Ride Completed! ✅", "Great job! The ride has been completed.");
                   setActiveRide(null);
-                  fetchActiveRide(); // Refresh
+                  fetchActiveRide();
+                  fetchRideHistory(); // Refresh
                 } else {
                   Alert.alert("Error", data.error || "Failed to complete ride");
                 }
@@ -722,12 +693,76 @@ const DriverScreen: React.FC = () => {
           </ScrollView>
         );
 
-      case "rides":
+        case "rides":
+          return (
+            <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+              <Text style={styles.title}>Recent Rides</Text>
+              
+              {isLoadingHistory ? (
+                <View style={styles.emptyState}>
+                  <ActivityIndicator size="large" color="#6E44FF" />
+                  <Text style={styles.emptyStateText}>Loading ride history...</Text>
+                </View>
+              ) : recentRides.length === 0 ? (
+                <View style={styles.emptyState}>
+                  <LinearGradient
+                    colors={['#FF6B6B', '#6E44FF']}
+                    style={styles.emptyStateIconContainer}
+                  >
+                    <Image
+                      source={{ uri: "https://cdn-icons-png.flaticon.com/512/2972/2972185.png" }}
+                      style={styles.emptyStateIcon}
+                    />
+                  </LinearGradient>
+                  <Text style={styles.emptyStateText}>No rides yet</Text>
+                  <Text style={styles.emptyStateSubText}>Complete your first ride to see it here!</Text>
+                </View>
+              ) : (
+                recentRides.map((ride) => (
+                  <View key={ride.id} style={styles.rideCard}>
+                    <View style={styles.rideHeader}>
+                      <Text style={styles.rideDate}>
+                        {new Date(ride.createdAt).toLocaleDateString()} at {new Date(ride.createdAt).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}
+                      </Text>
+                      <View style={styles.ratingBadge}>
+                        <Image source={{ uri: "https://cdn-icons-png.flaticon.com/512/1828/1828884.png" }} style={styles.starIcon} />
+                        <Text style={styles.ratingText}>{ride.rating ?? '—'}</Text>
+                      </View>
+                    </View>
+                    
+                    <View style={styles.rideDetails}>
+                      <View style={styles.locationRow}>
+                        <View style={[styles.dot, styles.pickupDot]} />
+                        <Text style={styles.locationText}>{ride.pickup?.address}</Text>
+                      </View>
+                      
+                      <View style={styles.dividerLine} />
+                      
+                      <View style={styles.locationRow}>
+                        <View style={[styles.dot, styles.dropDot]} />
+                        <Text style={styles.locationText}>{ride.drop?.address}</Text>
+                      </View>
+                    </View>
+                    
+                    <View style={styles.rideFooter}>
+                      <View style={styles.rideStat}>
+                        <Image source={{ uri: "https://cdn-icons-png.flaticon.com/512/854/854878.png" }} style={styles.statIcon} />
+                        <Text style={styles.statText}>{ride.distance} km</Text>
+                      </View>
+                      <View style={styles.fareContainer}>
+                        <Text style={styles.fareText}>₹{ride.fare}</Text>
+                      </View>
+                    </View>
+                  </View>
+                ))
+              )}
+            </ScrollView>
+          );
         return (
           <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
             <Text style={styles.title}>Recent Rides</Text>
             
-            {hardcodedRides.map((ride) => (
+            {/* {hardcodedRides.map((ride) => (
               <View key={ride.id} style={styles.rideCard}>
                 <View style={styles.rideHeader}>
                   <Text style={styles.rideDate}>{ride.date} at {ride.time}</Text>
@@ -767,7 +802,7 @@ const DriverScreen: React.FC = () => {
                   </View>
                 </View>
               </View>
-            ))}
+            ))} */}
           </ScrollView>
         );
 
@@ -2072,10 +2107,42 @@ const styles = StyleSheet.create({
       fontSize: 16,
       fontWeight: '800',
     },
-    callConsumerButtonText: {
-      color: '#FFFFFF',
-      fontSize: 16,
+    emptyState: {
+      alignItems: 'center',
+      padding: 50,
+    },
+    emptyStateIconContainer: {
+      width: 90,
+      height: 90,
+      borderRadius: 45,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: 28,
+      shadowColor: '#6E44FF',
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.3,
+      shadowRadius: 16,
+      elevation: 12,
+    },
+    emptyStateIcon: {
+      width: 45,
+      height: 45,
+      tintColor: '#FFFFFF',
+    },
+    emptyStateText: {
+      fontSize: 20,
       fontWeight: '800',
+      color: '#2D3436',
+      marginBottom: 10,
+      textAlign: 'center',
+      letterSpacing: -0.3,
+    },
+    emptyStateSubText: {
+      fontSize: 14,
+      color: '#636E72',
+      textAlign: 'center',
+      fontWeight: '500',
+      lineHeight: 20,
     },
     pocNoticeBanner: {
       backgroundColor: 'rgba(255, 193, 7, 0.9)',

@@ -82,27 +82,13 @@ const ConsumerHome: React.FC = () => {
     // Active ride state
     const [activeRide, setActiveRide] = useState<any>(null);
     const [isLoadingActiveRide, setIsLoadingActiveRide] = useState(false);
-  const [recentRides, setRecentRides] = useState<any[]>([
-    {
-      id: 1,
-      pickup: "MG Road, Bangalore",
-      drop: "Koramangala 5th Block",
-      fare: 185,
-      date: "2025-01-15",
-      time: "14:30",
-      status: "Completed",
-    },
-    {
-      id: 2,
-      pickup: "Indiranagar Metro Station",
-      drop: "HSR Layout",
-      fare: 220,
-      date: "2025-01-14",
-      time: "09:15",
-      status: "Completed",
-    },
-  ]);
-  
+    
+  // Remove these hardcoded rides:
+
+
+// Keep only:
+const [recentRides, setRecentRides] = useState<any[]>([]);
+const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   // Request location permission
   const requestLocationPermission = async (): Promise<boolean> => {
     if (Platform.OS === "ios") {
@@ -132,7 +118,26 @@ const ConsumerHome: React.FC = () => {
       return false;
     }
   };
-
+  const fetchRideHistory = async () => {
+    try {
+      setIsLoadingHistory(true);
+      const token = await AsyncStorage.getItem("authToken");
+      const res = await fetch(`${API_BASE_URL}/api/rides/history?page=1&limit=20`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setRecentRides(data.rides || []);
+        await AsyncStorage.setItem("recentRides", JSON.stringify(data.rides || []));
+      }
+    } catch (e) {
+      // fallback to any cached history
+      const cached = await AsyncStorage.getItem("recentRides");
+      if (cached) setRecentRides(JSON.parse(cached));
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  };
   // Get current location
   const getCurrentLocation = async () => {
     setIsLocationLoading(true);
@@ -533,6 +538,7 @@ const ConsumerHome: React.FC = () => {
       }
     };
     // Poll active ride status every 10 seconds
+// Poll active ride status every 10 seconds
 useEffect(() => {
   if (activeRide && (activeRide.status === 'accepted' || activeRide.status === 'in_progress')) {
     const pollInterval = setInterval(() => {
@@ -540,6 +546,10 @@ useEffect(() => {
     }, 10000); // Poll every 10 seconds
 
     return () => clearInterval(pollInterval);
+  } else if (activeRide && activeRide.status === 'completed') {
+    // Ride completed, refresh history
+    fetchRideHistory();
+    setActiveRide(null);
   }
 }, [activeRide]);
   // Poll for ride status
@@ -557,46 +567,51 @@ useEffect(() => {
         const data = await response.json();
 
         if (response.ok && data.success) {
-          if (data.status === 'accepted') {
-            clearInterval(interval);
-            setStatusPollingInterval(null);
-            setIsBooking(false);
-            setBookingStatus('');
-            
-            Alert.alert(
-              "Ride Accepted! 🎉",
-              `Your ride has been accepted!\n\nDriver is on the way to your pickup location.`,
-              [
-                {
-                  text: "OK",
-                  onPress: () => {
-                    // Clear form
-                    setPickup("");
-                    setDrop("");
-                    setPickupCoords(null);
-                    setDropCoords(null);
-                    setCurrentRideRequest(null);
-                    setDriverQueue([]);
-                    setRouteCoordinates([]);
-                    setRouteInfo(null);
-                  }
-                }
-              ]
-            );
-          } else if (data.status === 'no_drivers') {
-            clearInterval(interval);
-            setStatusPollingInterval(null);
-            setIsBooking(false);
-            setBookingStatus('');
-            
-            Alert.alert(
-              "No Drivers Available",
-              "All drivers are currently busy. Please try again later."
-            );
-            
-            setCurrentRideRequest(null);
-            setDriverQueue([]);
-          } else if (data.currentDriver) {
+          // In the startRideStatusPolling function, after successful ride acceptance:
+if (data.status === 'accepted') {
+  clearInterval(interval);
+  setStatusPollingInterval(null);
+  setIsBooking(false);
+  setBookingStatus('');
+  
+  Alert.alert(
+    "Ride Accepted! 🎉",
+    `Your ride has been accepted!\n\nDriver is on the way to your pickup location.`,
+    [
+      {
+        text: "OK",
+        onPress: () => {
+          // Clear form
+          setPickup("");
+          setDrop("");
+          setPickupCoords(null);
+          setDropCoords(null);
+          setCurrentRideRequest(null);
+          setDriverQueue([]);
+          setRouteCoordinates([]);
+          setRouteInfo(null);
+          // Refresh ride history
+          fetchRideHistory();
+        }
+      }
+    ]
+  );
+} else if (data.status === 'no_drivers') {
+  clearInterval(interval);
+  setStatusPollingInterval(null);
+  setIsBooking(false);
+  setBookingStatus('');
+  
+  Alert.alert(
+    "No Drivers Available",
+    "All drivers are currently busy. Please try again later."
+  );
+  
+  setCurrentRideRequest(null);
+  setDriverQueue([]);
+  // Refresh ride history
+  fetchRideHistory();
+} else if (data.currentDriver) {
             setBookingStatus(
               `Waiting for driver ${data.currentDriver.name} (${data.currentDriver.queuePosition}/${data.currentDriver.totalDrivers}) to accept...`
             );
@@ -695,20 +710,7 @@ useEffect(() => {
     }
   };
 
-  useEffect(() => {
-    const loadSavedRides = async () => {
-      try {
-        const savedRides = await AsyncStorage.getItem("recentRides");
-        if (savedRides) {
-          setRecentRides(JSON.parse(savedRides));
-        }
-      } catch (error) {
-        console.error("Error loading saved rides:", error);
-      }
-    };
-    
-    loadSavedRides();
-  }, []);
+
 
   // Handle Android Back Button
   useEffect(() => {
@@ -1207,7 +1209,80 @@ useEffect(() => {
           </View>
         );
 
-      case "RecentRides":
+        case "RecentRides":
+          return (
+            <View style={styles.contentBox}>
+              <Text style={styles.title}>Recent Rides</Text>
+              {isLoadingHistory ? (
+                <View style={styles.emptyState}>
+                  <ActivityIndicator size="large" color="#6E44FF" />
+                  <Text style={styles.emptyStateText}>Loading ride history...</Text>
+                </View>
+              ) : recentRides.length === 0 ? (
+                <View style={styles.emptyState}>
+                  <LinearGradient
+                    colors={['#FF6B6B', '#6E44FF']}
+                    style={styles.emptyStateIconContainer}
+                  >
+                    <Image
+                      source={{ uri: "https://cdn-icons-png.flaticon.com/512/2972/2972185.png" }}
+                      style={styles.emptyStateIcon}
+                    />
+                  </LinearGradient>
+                  <Text style={styles.emptyStateText}>No rides yet</Text>
+                  <Text style={styles.emptyStateSubText}>Book your first ride to see it here!</Text>
+                </View>
+              ) : (
+                <ScrollView showsVerticalScrollIndicator={false} style={styles.ridesScrollView}>
+                  {recentRides.map((ride) => (
+                    <LinearGradient
+                      key={ride.id}
+                      colors={['#FFFFFF', '#F8FBF8']}
+                      style={styles.rideCard}
+                    >
+                      <View style={styles.rideHeader}>
+                        <Text style={styles.rideDate}>
+                          {new Date(ride.createdAt).toLocaleDateString()} • {new Date(ride.createdAt).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}
+                        </Text>
+                        <View
+                          style={[
+                            styles.statusBadge,
+                            ride.status === "completed" ? styles.completedBadge : styles.bookedBadge,
+                          ]}
+                        >
+                          <Text style={styles.statusText}>{ride.status?.toUpperCase() || 'COMPLETED'}</Text>
+                        </View>
+                      </View>
+                      
+                      <View style={styles.rideDetails}>
+                        <View style={styles.locationRow}>
+                          <LinearGradient
+                            colors={['#6E44FF', '#8A6EFF']}
+                            style={[styles.dot, styles.pickupDot]}
+                          />
+                          <Text style={styles.locationText} numberOfLines={2}>{ride.pickup?.address || 'Unknown pickup'}</Text>
+                        </View>
+                        
+                        <View style={styles.dividerLine} />
+                        
+                        <View style={styles.locationRow}>
+                          <LinearGradient
+                            colors={['#FF6B6B', '#FF8A8A']}
+                            style={[styles.dot, styles.dropDot]}
+                          />
+                          <Text style={styles.locationText} numberOfLines={2}>{ride.drop?.address || 'Unknown drop'}</Text>
+                        </View>
+                      </View>
+                      
+                      <View style={styles.rideFooter}>
+                        <Text style={styles.fareText}>₹{ride.fare}</Text>
+                      </View>
+                    </LinearGradient>
+                  ))}
+                </ScrollView>
+              )}
+            </View>
+          );
         return (
           <View style={styles.contentBox}>
             <Text style={styles.title}>Recent Rides</Text>
@@ -1403,7 +1478,14 @@ useEffect(() => {
           <TouchableOpacity
             key={tab.key}
             style={[styles.tabButton, activeTab === tab.key && styles.activeTab]}
-            onPress={() => setActiveTab(tab.key as any)}
+            // Update the tab switching logic around line 1481:
+onPress={() => {
+  setActiveTab(tab.key as any);
+  // Add this condition to refresh history when switching to Recent Rides
+  if (tab.key === "RecentRides") {
+    fetchRideHistory();
+  }
+}}
           >
             <LinearGradient
               colors={activeTab === tab.key ? ['#FF6B6B', '#6E44FF'] : ['#FFFFFF', '#F8FBF8']}
