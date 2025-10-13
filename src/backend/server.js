@@ -1,4 +1,4 @@
-// server.js - Enhanced with Location Services
+// server.js - Enhanced with Location Services and Complete Booking System
 
 const express = require("express");
 const cors = require("cors");
@@ -11,21 +11,15 @@ const app = express();
 const PORT = 5000;
 const JWT_SECRET = process.env.JWT_SECRET || "3cd55083223f2738ec3b05d633a6c3e5559d153c6aabf1eab3438e2ece9188adc5bb5701b468f51c08e95c8b1a2522154b5863d0f3e7e5f8d444e84fb3e873bf";
 
-// -------- Middleware --------
-app.use(
-  cors({
-    origin: [
-      "http://localhost:3000",
-      "http://10.0.2.2:3000",
-      "http://127.0.0.1:3000",
-      "http://10.139.99.126:3000",
-      "http://10.139.99.126:5000",
-    ],
-    credentials: true,
-  })
-);
+// Booking System Configuration
+const RIDE_REQUEST_TIMEOUT = 120000; // 30 seconds
+const pendingRideRequests = new Map(); // Store active ride requests
 
-app.use(express.json({ limit: "10mb" }));
+// -------- Middleware --------
+app.use(cors()); // Allow all origins for React Native
+
+app.use(express.json({ limit: "10mb" })); // Parse JSON bodies
+app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
 
 // -------- JWT Middleware --------
 const authenticateToken = (req, res, next) => {
@@ -70,7 +64,7 @@ const calculateFare = (distanceKm) => {
 
 // Google Maps API configuration
 const GOOGLE_MAPS_API_KEY = "AIzaSyBWnoFhMsZv2J5JXiqWbtRmS-ToAGymdTo";
-const axios = require('axios'); // Add this import at the top of your file
+const axios = require('axios');
 
 // Real geocoding function using Google Maps API
 const geocodeAddress = async (address) => {
@@ -105,7 +99,6 @@ const geocodeAddress = async (address) => {
   } catch (error) {
     console.error('❌ Geocoding error:', error.message);
     
-    // If it's a network error or API error, throw it
     if (error.response) {
       throw new Error(`Geocoding API error: ${error.response.status}`);
     } else if (error.request) {
@@ -151,7 +144,6 @@ const reverseGeocode = async (latitude, longitude) => {
   } catch (error) {
     console.error('❌ Reverse geocoding error:', error.message);
     
-    // Fallback to basic location description
     return {
       formatted_address: `Location near ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`,
       place_id: null,
@@ -160,6 +152,49 @@ const reverseGeocode = async (latitude, longitude) => {
     };
   }
 };
+
+// Helper function to decode Google's polyline format
+function decodePolyline(encoded) {
+  const poly = [];
+  let index = 0;
+  const len = encoded.length;
+  let lat = 0;
+  let lng = 0;
+
+  while (index < len) {
+    let b;
+    let shift = 0;
+    let result = 0;
+    
+    do {
+      b = encoded.charCodeAt(index++) - 63;
+      result |= (b & 0x1f) << shift;
+      shift += 5;
+    } while (b >= 0x20);
+    
+    const dlat = ((result & 1) !== 0 ? ~(result >> 1) : (result >> 1));
+    lat += dlat;
+
+    shift = 0;
+    result = 0;
+    
+    do {
+      b = encoded.charCodeAt(index++) - 63;
+      result |= (b & 0x1f) << shift;
+      shift += 5;
+    } while (b >= 0x20);
+    
+    const dlng = ((result & 1) !== 0 ? ~(result >> 1) : (result >> 1));
+    lng += dlng;
+
+    poly.push({
+      latitude: lat / 1e5,
+      longitude: lng / 1e5,
+    });
+  }
+
+  return poly;
+}
 
 // -------- Original Authentication APIs --------
 app.post("/signup", async (req, res) => {
@@ -374,7 +409,7 @@ app.post("/login", (req, res) => {
 
 // -------- LOCATION-RELATED APIs --------
 
-// Update User Location (for both consumers and drivers) - Enhanced with reverse geocoding
+// Update User Location (for both consumers and drivers)
 app.post("/api/location/update", authenticateToken, async (req, res) => {
   const { latitude, longitude, address } = req.body;
   const { id, role } = req.user;
@@ -383,14 +418,12 @@ app.post("/api/location/update", authenticateToken, async (req, res) => {
     return res.status(400).json({ error: "Latitude and longitude are required" });
   }
 
-  // Validate coordinates
   if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
     return res.status(400).json({ error: "Invalid coordinates" });
   }
 
   let locationAddress = address;
   
-  // If no address provided, get it from reverse geocoding
   if (!locationAddress) {
     try {
       const reverseGeoResult = await reverseGeocode(latitude, longitude);
@@ -404,7 +437,6 @@ app.post("/api/location/update", authenticateToken, async (req, res) => {
 
   const table = role === "Consumer" ? "consumer_locations" : "driver_locations";
   
-  // First, try to update existing location
   const updateQuery = `
     UPDATE ${table} 
     SET latitude = ?, longitude = ?, address = ?, updated_at = NOW() 
@@ -417,7 +449,6 @@ app.post("/api/location/update", authenticateToken, async (req, res) => {
       return res.status(500).json({ error: "Failed to update location" });
     }
 
-    // If no rows were updated, insert new location
     if (result.affectedRows === 0) {
       const insertQuery = `
         INSERT INTO ${table} (user_id, latitude, longitude, address, created_at, updated_at)
@@ -479,95 +510,113 @@ app.get("/api/location/current", authenticateToken, (req, res) => {
   });
 });
 
-// Get Nearby Drivers (for consumers)
-app.get("/api/drivers/nearby", authenticateToken, (req, res) => {
-  const { latitude, longitude, radius = 5 } = req.query; // radius in km
+// -------- ENHANCED RIDE BOOKING WITH DRIVER QUEUE --------
 
-  if (req.user.role !== "Consumer") {
-    return res.status(403).json({ error: "Only consumers can view nearby drivers" });
-  }
-
-  if (!latitude || !longitude) {
-    return res.status(400).json({ error: "Latitude and longitude are required" });
-  }
-
-  const query = `
-    SELECT 
-      d.id, d.full_name, d.phone, d.scooter_model, d.profile_photo,
-      dl.latitude, dl.longitude, dl.address, dl.updated_at
-    FROM drivers d
-    JOIN driver_locations dl ON d.id = dl.user_id
-    WHERE d.is_available = 1 
-    AND dl.updated_at > DATE_SUB(NOW(), INTERVAL 30 MINUTE)
-  `;
-
-  db.query(query, (err, results) => {
-    if (err) {
-      console.error("Nearby drivers error:", err);
-      return res.status(500).json({ error: "Failed to fetch nearby drivers" });
-    }
-
-    const userLat = parseFloat(latitude);
-    const userLon = parseFloat(longitude);
-
-    // Filter drivers within radius and add distance
-    const nearbyDrivers = results
-      .map(driver => {
-        const driverLat = parseFloat(driver.latitude);
-        const driverLon = parseFloat(driver.longitude);
-        const distance = calculateDistance(userLat, userLon, driverLat, driverLon);
-
-        return {
-          id: driver.id,
-          fullName: driver.full_name,
-          phone: driver.phone,
-          scooterModel: driver.scooter_model,
-          profilePhoto: driver.profile_photo,
-          location: {
-            latitude: driverLat,
-            longitude: driverLon,
-            address: driver.address
-          },
-          distance: Math.round(distance * 100) / 100, // Round to 2 decimal places
-          lastSeen: driver.updated_at
-        };
-      })
-      .filter(driver => driver.distance <= parseFloat(radius))
-      .sort((a, b) => a.distance - b.distance);
-
-    res.json({
-      nearbyDrivers,
-      searchRadius: parseFloat(radius),
-      totalFound: nearbyDrivers.length
-    });
-  });
-});
-
-// -------- RIDE BOOKING APIs --------
-
-// Book a Ride
-app.post("/api/rides/book", authenticateToken, async (req, res) => {
-  const { pickupLocation, dropLocation, pickupAddress, dropAddress } = req.body;
+// Find Nearby Available Drivers
+app.post("/api/rides/find-drivers", authenticateToken, async (req, res) => {
+  const { pickupLocation } = req.body;
   const consumerId = req.user.id;
 
   if (req.user.role !== "Consumer") {
-    return res.status(403).json({ error: "Only consumers can book rides" });
+    return res.status(403).json({ error: "Only consumers can search for drivers" });
   }
 
-  if (!pickupLocation?.latitude || !pickupLocation?.longitude || 
-      !dropLocation?.latitude || !dropLocation?.longitude) {
-    return res.status(400).json({ error: "Pickup and drop coordinates are required" });
+  if (!pickupLocation?.latitude || !pickupLocation?.longitude) {
+    return res.status(400).json({ error: "Pickup location is required" });
   }
 
   try {
-    // Calculate distance and fare
+    const query = `
+      SELECT 
+        d.id, d.full_name, d.phone, d.scooter_model, d.profile_photo,
+        dl.latitude, dl.longitude, dl.address, dl.updated_at
+      FROM drivers d
+      INNER JOIN driver_locations dl ON d.id = dl.user_id
+      WHERE d.is_available = 1 
+      AND dl.updated_at > DATE_SUB(NOW(), INTERVAL 30 MINUTE)
+    `;
+
+    db.query(query, (err, results) => {
+      if (err) {
+        console.error("Find drivers error:", err);
+        return res.status(500).json({ error: "Failed to find drivers" });
+      }
+
+      const userLat = parseFloat(pickupLocation.latitude);
+      const userLon = parseFloat(pickupLocation.longitude);
+
+      const driversWithDistance = results
+        .map(driver => {
+          const driverLat = parseFloat(driver.latitude);
+          const driverLon = parseFloat(driver.longitude);
+          const distance = calculateDistance(userLat, userLon, driverLat, driverLon);
+
+          return {
+            id: driver.id,
+            fullName: driver.full_name,
+            phone: driver.phone,
+            scooterModel: driver.scooter_model,
+            profilePhoto: driver.profile_photo,
+            location: {
+              latitude: driverLat,
+              longitude: driverLon,
+              address: driver.address
+            },
+            distanceFromPickup: Math.round(distance * 100) / 100,
+            lastSeen: driver.updated_at
+          };
+        })
+        .filter(driver => driver.distanceFromPickup <= 10)
+        .sort((a, b) => a.distanceFromPickup - b.distanceFromPickup)
+        .slice(0, 3);
+
+      console.log(`\n🚗 === DRIVER QUEUE FOR CONSUMER ${consumerId} ===`);
+      console.log(`📍 Pickup Location: ${userLat.toFixed(4)}, ${userLon.toFixed(4)}`);
+      console.log(`👥 Available Drivers Found: ${driversWithDistance.length}\n`);
+      
+      driversWithDistance.forEach((driver, index) => {
+        console.log(`${index + 1}. Driver ID: ${driver.id} | Name: ${driver.fullName}`);
+        console.log(`   Distance: ${driver.distanceFromPickup} km | Scooter: ${driver.scooterModel}`);
+        console.log(`   Location: ${driver.location.latitude.toFixed(4)}, ${driver.location.longitude.toFixed(4)}\n`);
+      });
+
+      if (driversWithDistance.length === 0) {
+        console.log("❌ No available drivers found within 10km radius\n");
+      }
+
+      res.json({
+        success: true,
+        drivers: driversWithDistance,
+        totalFound: driversWithDistance.length,
+        searchRadius: 10
+      });
+    });
+  } catch (error) {
+    console.error("Find drivers error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Create Ride Request
+app.post("/api/rides/request", authenticateToken, async (req, res) => {
+  const { pickupLocation, dropLocation, pickupAddress, dropAddress, driverQueue } = req.body;
+  const consumerId = req.user.id;
+
+  if (req.user.role !== "Consumer") {
+    return res.status(403).json({ error: "Only consumers can request rides" });
+  }
+
+  if (!pickupLocation || !dropLocation || !driverQueue || driverQueue.length === 0) {
+    return res.status(400).json({ error: "Invalid ride request data" });
+  }
+
+  try {
     const distance = calculateDistance(
       pickupLocation.latitude, pickupLocation.longitude,
       dropLocation.latitude, dropLocation.longitude
     );
     const fare = calculateFare(distance);
 
-    // Insert ride booking
     const rideQuery = `
       INSERT INTO rides (
         consumer_id, pickup_latitude, pickup_longitude, pickup_address,
@@ -583,32 +632,460 @@ app.post("/api/rides/book", authenticateToken, async (req, res) => {
       distance, fare
     ], (err, result) => {
       if (err) {
-        console.error("Ride booking error:", err);
-        return res.status(500).json({ error: "Failed to book ride" });
+        console.error("Ride request error:", err);
+        return res.status(500).json({ error: "Failed to create ride request" });
       }
 
+      const rideId = result.insertId;
+
+      const rideRequest = {
+        rideId,
+        consumerId,
+        pickupLocation,
+        dropLocation,
+        pickupAddress,
+        dropAddress,
+        distance,
+        fare,
+        driverQueue: [...driverQueue],
+        currentDriverIndex: 0,
+        status: 'searching',
+        createdAt: new Date().toISOString()
+      };
+
+      pendingRideRequests.set(rideId, rideRequest);
+
+      console.log(`\n🎯 === RIDE REQUEST CREATED ===`);
+      console.log(`Ride ID: ${rideId}`);
+      console.log(`Consumer ID: ${consumerId}`);
+      console.log(`Distance: ${distance.toFixed(2)} km`);
+      console.log(`Fare: ₹${fare}`);
+      console.log(`Driver Queue: [${driverQueue.map(d => d.id).join(', ')}]`);
+      console.log(`Requesting Driver #1: ID ${driverQueue[0].id} (${driverQueue[0].fullName})\n`);
+
+      startDriverTimeout(rideId);
+
       res.status(201).json({
-        message: "Ride booked successfully",
-        rideId: result.insertId,
+        success: true,
+        rideId,
         ride: {
-          id: result.insertId,
+          id: rideId,
           pickupLocation,
           dropLocation,
           pickupAddress,
           dropAddress,
           distance: Math.round(distance * 100) / 100,
           fare,
-          status: 'pending',
-          createdAt: new Date().toISOString()
+          status: 'searching',
+          currentDriver: driverQueue[0],
+          queuePosition: 1,
+          totalDrivers: driverQueue.length
         }
       });
     });
   } catch (error) {
-    console.error("Booking error:", error);
+    console.error("Ride request error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
 
+// Helper function to handle driver timeout
+function startDriverTimeout(rideId) {
+  setTimeout(() => {
+    const rideRequest = pendingRideRequests.get(rideId);
+    
+    if (!rideRequest || rideRequest.status !== 'searching') {
+      return;
+    }
+
+    console.log(`\n⏰ === DRIVER TIMEOUT ===`);
+    console.log(`Ride ID: ${rideId}`);
+    console.log(`Driver ${rideRequest.driverQueue[rideRequest.currentDriverIndex].id} did not respond\n`);
+
+    moveToNextDriver(rideId);
+  }, RIDE_REQUEST_TIMEOUT);
+}
+
+// Move to next driver in queue
+function moveToNextDriver(rideId) {
+  const rideRequest = pendingRideRequests.get(rideId);
+  
+  if (!rideRequest) return;
+
+  rideRequest.currentDriverIndex++;
+
+  if (rideRequest.currentDriverIndex >= rideRequest.driverQueue.length) {
+    console.log(`\n❌ === NO DRIVERS AVAILABLE ===`);
+    console.log(`Ride ID: ${rideId} - All drivers exhausted\n`);
+    
+    rideRequest.status = 'no_drivers';
+    
+    db.query(
+      "UPDATE rides SET status = 'cancelled', cancelled_at = NOW() WHERE id = ?",
+      [rideId]
+    );
+    
+    return;
+  }
+
+  const nextDriver = rideRequest.driverQueue[rideRequest.currentDriverIndex];
+  console.log(`\n➡️ === MOVING TO NEXT DRIVER ===`);
+  console.log(`Ride ID: ${rideId}`);
+  console.log(`Next Driver: #${rideRequest.currentDriverIndex + 1} - ID ${nextDriver.id} (${nextDriver.fullName})\n`);
+
+  startDriverTimeout(rideId);
+}
+
+// Get Pending Rides for Driver
+app.get("/api/driver/pending-rides", authenticateToken, (req, res) => {
+  const driverId = req.user.id;
+
+  if (req.user.role !== "Driver") {
+    return res.status(403).json({ error: "Only drivers can view pending rides" });
+  }
+
+  const pendingRides = [];
+
+  for (const [rideId, rideRequest] of pendingRideRequests.entries()) {
+    if (rideRequest.status === 'searching') {
+      const currentDriver = rideRequest.driverQueue[rideRequest.currentDriverIndex];
+      
+      if (currentDriver.id === driverId) {
+        const distanceToPickup = currentDriver.distanceFromPickup;
+
+        pendingRides.push({
+          rideId,
+          pickupLocation: rideRequest.pickupLocation,
+          dropLocation: rideRequest.dropLocation,
+          pickupAddress: rideRequest.pickupAddress,
+          dropAddress: rideRequest.dropAddress,
+          distanceToPickup: Math.round(distanceToPickup * 100) / 100,
+          totalDistance: Math.round(rideRequest.distance * 100) / 100,
+          fare: rideRequest.fare,
+          queuePosition: rideRequest.currentDriverIndex + 1,
+          createdAt: rideRequest.createdAt
+        });
+      }
+    }
+  }
+
+  res.json({
+    success: true,
+    pendingRides,
+    count: pendingRides.length
+  });
+});
+
+// Accept Ride
+// Auto-complete ride after 5 minutes (POC simulation)
+app.post("/api/rides/:rideId/accept", authenticateToken, (req, res) => {
+  const { rideId } = req.params;
+  const driverId = req.user.id;
+
+  if (req.user.role !== "Driver") {
+    return res.status(403).json({ error: "Only drivers can accept rides" });
+  }
+
+  const rideRequest = pendingRideRequests.get(parseInt(rideId));
+
+  if (!rideRequest) {
+    return res.status(404).json({ error: "Ride request not found or expired" });
+  }
+
+  if (rideRequest.status !== 'searching') {
+    return res.status(400).json({ error: "Ride is no longer available" });
+  }
+
+  const currentDriver = rideRequest.driverQueue[rideRequest.currentDriverIndex];
+
+  if (currentDriver.id !== driverId) {
+    return res.status(403).json({ error: "This ride is not assigned to you" });
+  }
+
+  const updateQuery = `
+    UPDATE rides 
+    SET driver_id = ?, status = 'accepted', accepted_at = NOW() 
+    WHERE id = ? AND status = 'pending'
+  `;
+
+  db.query(updateQuery, [driverId, rideId], (err, result) => {
+    if (err) {
+      return res.status(500).json({ error: "Failed to accept ride" });
+    }
+
+    if (result.affectedRows === 0) {
+      return res.status(409).json({ error: "Ride was already accepted" });
+    }
+
+    rideRequest.status = 'accepted';
+    rideRequest.acceptedDriverId = driverId;
+
+    console.log(`\n✅ === RIDE ACCEPTED ===`);
+    console.log(`Ride ID: ${rideId}`);
+    console.log(`Driver ID: ${driverId} (${currentDriver.fullName})`);
+    console.log(`Distance to Pickup: ${currentDriver.distanceFromPickup} km`);
+    console.log(`Total Trip Distance: ${rideRequest.distance.toFixed(2)} km`);
+    console.log(`Fare: ₹${rideRequest.fare}\n`);
+
+   // Lines 830-854 - Replace with this improved version:
+
+// 🚗 POC AUTO-SIMULATION: Complete ride after 5 minutes
+console.log(`🤖 [POC] Auto-completing ride in 5 minutes...`);
+
+// Capture rideId explicitly to avoid any closure issues
+const capturedRideId = parseInt(rideId);
+
+// Step 1: Auto-start ride after 30 seconds
+const startTimeout = setTimeout(() => {
+  console.log(`🚗 [POC] Auto-starting ride ${capturedRideId}...`);
+  db.query(
+    "UPDATE rides SET status = 'in_progress', started_at = NOW() WHERE id = ? AND status = 'accepted'",
+    [capturedRideId],
+    (err, result) => {
+      if (err) {
+        console.error(`❌ Failed to auto-start ride ${capturedRideId}:`, err);
+      } else if (result.affectedRows > 0) {
+        console.log(`🚗 [POC] Ride ${capturedRideId} auto-started successfully`);
+      } else {
+        console.warn(`⚠️ Could not auto-start ride ${capturedRideId} - status may have changed`);
+      }
+    }
+  );
+}, 30000); // 30 seconds
+
+// Step 2: Auto-complete ride after 5 minutes
+const completeTimeout = setTimeout(() => {
+  console.log(`✅ [POC] Auto-completing ride ${capturedRideId}...`);
+  db.query(
+    "UPDATE rides SET status = 'completed', completed_at = NOW() WHERE id = ? AND status IN ('accepted', 'in_progress')",
+    [capturedRideId],
+    (err, result) => {
+      if (err) {
+        console.error(`❌ Failed to auto-complete ride ${capturedRideId}:`, err);
+      } else if (result.affectedRows > 0) {
+        console.log(`✅ [POC] Ride ${capturedRideId} auto-completed and added to history`);
+        pendingRideRequests.delete(capturedRideId);
+      } else {
+        console.warn(`⚠️ Could not auto-complete ride ${capturedRideId} - ride may not exist or already completed`);
+      }
+    }
+  );
+}, 300000); // 5 minutes (300 seconds)
+
+// Store timeout IDs in case we need to cancel them
+if (!global.pocTimeouts) {
+  global.pocTimeouts = new Map();
+}
+global.pocTimeouts.set(capturedRideId, { startTimeout, completeTimeout });
+
+    db.query(
+      "SELECT latitude, longitude, address FROM driver_locations WHERE user_id = ?",
+      [driverId],
+      (locErr, locResults) => {
+        const driverLocation = locResults && locResults.length > 0 
+          ? {
+              latitude: parseFloat(locResults[0].latitude),
+              longitude: parseFloat(locResults[0].longitude),
+              address: locResults[0].address
+            }
+          : currentDriver.location;
+
+        // Calculate ETA from driver to pickup
+        const distanceToPickup = currentDriver.distanceFromPickup;
+        const etaToPickupMinutes = Math.round((distanceToPickup / 25) * 60); // Assuming 25 km/h average speed
+
+        res.json({
+          success: true,
+          message: "Ride accepted successfully",
+          ride: {
+            rideId: parseInt(rideId),
+            driverLocation,
+            pickupLocation: rideRequest.pickupLocation,
+            dropLocation: rideRequest.dropLocation,
+            pickupAddress: rideRequest.pickupAddress,
+            dropAddress: rideRequest.dropAddress,
+            distanceToPickup: Math.round(currentDriver.distanceFromPickup * 100) / 100,
+            totalDistance: Math.round(rideRequest.distance * 100) / 100,
+            fare: rideRequest.fare,
+            etaToPickup: etaToPickupMinutes,
+            status: 'accepted',
+            autoCompleteIn: 300 // 5 minutes in seconds
+          }
+        });
+      }
+    );
+  });
+});
+// Auto-free driver if ride not completed within 2 hours
+
+// Reject Ride
+app.post("/api/rides/:rideId/reject", authenticateToken, (req, res) => {
+  const { rideId } = req.params;
+  const driverId = req.user.id;
+
+  if (req.user.role !== "Driver") {
+    return res.status(403).json({ error: "Only drivers can reject rides" });
+  }
+
+  const rideRequest = pendingRideRequests.get(parseInt(rideId));
+
+  if (!rideRequest || rideRequest.status !== 'searching') {
+    return res.status(404).json({ error: "Ride request not found" });
+  }
+
+  const currentDriver = rideRequest.driverQueue[rideRequest.currentDriverIndex];
+
+  if (currentDriver.id !== driverId) {
+    return res.status(403).json({ error: "This ride is not assigned to you" });
+  }
+
+  console.log(`\n❌ === RIDE REJECTED ===`);
+  console.log(`Ride ID: ${rideId}`);
+  console.log(`Driver ID: ${driverId} (${currentDriver.fullName})\n`);
+
+  moveToNextDriver(parseInt(rideId));
+
+  res.json({
+    success: true,
+    message: "Ride rejected, moving to next driver"
+  });
+});
+
+// Get Ride Status
+app.get("/api/rides/:rideId/status", authenticateToken, (req, res) => {
+  const { rideId } = req.params;
+  const userId = req.user.id;
+
+  const rideRequest = pendingRideRequests.get(parseInt(rideId));
+
+  if (!rideRequest) {
+    db.query("SELECT * FROM rides WHERE id = ?", [rideId], (err, results) => {
+      if (err || results.length === 0) {
+        return res.status(404).json({ error: "Ride not found" });
+      }
+
+      const ride = results[0];
+      res.json({
+        success: true,
+        status: ride.status,
+        rideId: parseInt(rideId),
+        driverId: ride.driver_id
+      });
+    });
+    return;
+  }
+
+  if (rideRequest.consumerId !== userId && req.user.role === 'Consumer') {
+    return res.status(403).json({ error: "Unauthorized" });
+  }
+
+  const currentDriver = rideRequest.driverQueue[rideRequest.currentDriverIndex];
+
+  res.json({
+    success: true,
+    status: rideRequest.status,
+    rideId: parseInt(rideId),
+    currentDriver: rideRequest.status === 'searching' ? {
+      id: currentDriver.id,
+      name: currentDriver.fullName,
+      queuePosition: rideRequest.currentDriverIndex + 1,
+      totalDrivers: rideRequest.driverQueue.length
+    } : null,
+    acceptedDriverId: rideRequest.acceptedDriverId || null
+  });
+});
+// Get Active Ride for Consumer or Driver
+app.get("/api/rides/active", authenticateToken, (req, res) => {
+  const { id, role } = req.user;
+
+  const query = role === "Consumer"
+    ? `
+      SELECT 
+        r.*, 
+        d.full_name as driver_name, 
+        d.phone as driver_phone, 
+        d.scooter_model,
+        d.profile_photo as driver_photo,
+        dl.latitude as driver_latitude,
+        dl.longitude as driver_longitude
+      FROM rides r
+      LEFT JOIN drivers d ON r.driver_id = d.id
+      LEFT JOIN driver_locations dl ON d.id = dl.user_id
+      WHERE r.consumer_id = ? 
+      AND r.status IN ('accepted', 'in_progress')
+      ORDER BY r.created_at DESC
+      LIMIT 1
+    `
+    : `
+      SELECT 
+        r.*, 
+        c.full_name as consumer_name, 
+        c.phone as consumer_phone
+      FROM rides r
+      LEFT JOIN consumers c ON r.consumer_id = c.id
+      WHERE r.driver_id = ? 
+      AND r.status IN ('accepted', 'in_progress')
+      ORDER BY r.created_at DESC
+      LIMIT 1
+    `;
+
+  db.query(query, [id], (err, results) => {
+    if (err) {
+      console.error("Get active ride error:", err);
+      return res.status(500).json({ error: "Failed to fetch active ride" });
+    }
+
+    if (results.length === 0) {
+      return res.json({ success: true, ride: null });
+    }
+
+    const ride = results[0];
+    
+    const rideData = {
+      id: ride.id,
+      pickup: {
+        latitude: parseFloat(ride.pickup_latitude),
+        longitude: parseFloat(ride.pickup_longitude),
+        address: ride.pickup_address
+      },
+      drop: {
+        latitude: parseFloat(ride.drop_latitude),
+        longitude: parseFloat(ride.drop_longitude),
+        address: ride.drop_address
+      },
+      distance: parseFloat(ride.distance_km),
+      fare: parseFloat(ride.fare),
+      status: ride.status,
+      createdAt: ride.created_at,
+      acceptedAt: ride.accepted_at,
+      startedAt: ride.started_at,
+    };
+
+    if (role === "Consumer") {
+      rideData.driver = ride.driver_id ? {
+        id: ride.driver_id,
+        name: ride.driver_name,
+        phone: ride.driver_phone,
+        scooterModel: ride.scooter_model,
+        profilePhoto: ride.driver_photo,
+        location: ride.driver_latitude && ride.driver_longitude ? {
+          latitude: parseFloat(ride.driver_latitude),
+          longitude: parseFloat(ride.driver_longitude),
+        } : null
+      } : null;
+    } else {
+      rideData.consumer = {
+        name: ride.consumer_name,
+        phone: ride.consumer_phone
+      };
+    }
+
+    res.json({
+      success: true,
+      ride: rideData
+    });
+  });
+});
 // Get User's Ride History
 app.get("/api/rides/history", authenticateToken, (req, res) => {
   const { id, role } = req.user;
@@ -617,29 +1094,31 @@ app.get("/api/rides/history", authenticateToken, (req, res) => {
 
   let query, params;
 
-  if (role === "Consumer") {
-    query = `
-      SELECT 
-        r.*, d.full_name as driver_name, d.phone as driver_phone, d.scooter_model
-      FROM rides r
-      LEFT JOIN drivers d ON r.driver_id = d.id
-      WHERE r.consumer_id = ?
-      ORDER BY r.created_at DESC
-      LIMIT ? OFFSET ?
-    `;
-    params = [id, parseInt(limit), parseInt(offset)];
-  } else {
-    query = `
-      SELECT 
-        r.*, c.full_name as consumer_name, c.phone as consumer_phone
-      FROM rides r
-      LEFT JOIN consumers c ON r.consumer_id = c.id
-      WHERE r.driver_id = ?
-      ORDER BY r.created_at DESC
-      LIMIT ? OFFSET ?
-    `;
-    params = [id, parseInt(limit), parseInt(offset)];
-  }
+  // Lines 1072-1094 - Update the queries to filter completed rides:
+
+if (role === "Consumer") {
+  query = `
+    SELECT 
+      r.*, d.full_name as driver_name, d.phone as driver_phone, d.scooter_model
+    FROM rides r
+    LEFT JOIN drivers d ON r.driver_id = d.id
+    WHERE r.consumer_id = ? AND r.status = 'completed'
+    ORDER BY r.created_at DESC
+    LIMIT ? OFFSET ?
+  `;
+  params = [id, parseInt(limit), parseInt(offset)];
+} else {
+  query = `
+    SELECT 
+      r.*, c.full_name as consumer_name, c.phone as consumer_phone
+    FROM rides r
+    LEFT JOIN consumers c ON r.consumer_id = c.id
+    WHERE r.driver_id = ? AND r.status = 'completed'
+    ORDER BY r.created_at DESC
+    LIMIT ? OFFSET ?
+  `;
+  params = [id, parseInt(limit), parseInt(offset)];
+}
 
   db.query(query, params, (err, results) => {
     if (err) {
@@ -690,52 +1169,7 @@ app.get("/api/rides/history", authenticateToken, (req, res) => {
   });
 });
 
-// Accept Ride (for drivers)
-app.post("/api/rides/:rideId/accept", authenticateToken, (req, res) => {
-  const { rideId } = req.params;
-  const driverId = req.user.id;
-
-  if (req.user.role !== "Driver") {
-    return res.status(403).json({ error: "Only drivers can accept rides" });
-  }
-
-  // Check if ride exists and is pending
-  const checkQuery = "SELECT * FROM rides WHERE id = ? AND status = 'pending'";
-  
-  db.query(checkQuery, [rideId], (err, results) => {
-    if (err) {
-      return res.status(500).json({ error: "Database error" });
-    }
-
-    if (results.length === 0) {
-      return res.status(404).json({ error: "Ride not found or already accepted" });
-    }
-
-    // Update ride with driver and change status
-    const updateQuery = `
-      UPDATE rides 
-      SET driver_id = ?, status = 'accepted', accepted_at = NOW() 
-      WHERE id = ? AND status = 'pending'
-    `;
-
-    db.query(updateQuery, [driverId, rideId], (updateErr, updateResult) => {
-      if (updateErr) {
-        return res.status(500).json({ error: "Failed to accept ride" });
-      }
-
-      if (updateResult.affectedRows === 0) {
-        return res.status(409).json({ error: "Ride was already accepted by another driver" });
-      }
-
-      res.json({
-        message: "Ride accepted successfully",
-        rideId: parseInt(rideId)
-      });
-    });
-  });
-});
-
-// Start Ride (for drivers)
+// Start Ride
 app.post("/api/rides/:rideId/start", authenticateToken, (req, res) => {
   const { rideId } = req.params;
   const driverId = req.user.id;
@@ -766,7 +1200,7 @@ app.post("/api/rides/:rideId/start", authenticateToken, (req, res) => {
   });
 });
 
-// Complete Ride (for drivers)
+// Complete Ride
 app.post("/api/rides/:rideId/complete", authenticateToken, (req, res) => {
   const { rideId } = req.params;
   const driverId = req.user.id;
@@ -797,7 +1231,9 @@ app.post("/api/rides/:rideId/complete", authenticateToken, (req, res) => {
   });
 });
 
-// Enhanced Geocode Address to Coordinates with Google Maps API
+// -------- GOOGLE MAPS APIs --------
+
+// Geocode Address
 app.post("/api/geocode", authenticateToken, async (req, res) => {
   const { address } = req.body;
 
@@ -830,7 +1266,7 @@ app.post("/api/geocode", authenticateToken, async (req, res) => {
   }
 });
 
-// Enhanced Reverse Geocode Coordinates to Address with Google Maps API
+// Reverse Geocode
 app.post("/api/reverse-geocode", authenticateToken, async (req, res) => {
   const { latitude, longitude } = req.body;
 
@@ -838,7 +1274,6 @@ app.post("/api/reverse-geocode", authenticateToken, async (req, res) => {
     return res.status(400).json({ error: "Latitude and longitude are required" });
   }
 
-  // Validate coordinates
   if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
     return res.status(400).json({ error: "Invalid coordinates" });
   }
@@ -860,7 +1295,6 @@ app.post("/api/reverse-geocode", authenticateToken, async (req, res) => {
   } catch (error) {
     console.error("Reverse geocoding error:", error.message);
     
-    // Still return a basic response even if Google API fails
     res.json({
       success: false,
       coordinates: { 
@@ -874,9 +1308,68 @@ app.post("/api/reverse-geocode", authenticateToken, async (req, res) => {
   }
 });
 
-// New API: Get Places Suggestions (Google Places Autocomplete)
+// Get Directions
+app.post("/api/directions", authenticateToken, async (req, res) => {
+  const { origin, destination } = req.body;
+
+  if (!origin || !destination) {
+    return res.status(400).json({ error: "Origin and destination are required" });
+  }
+
+  try {
+    const originEncoded = encodeURIComponent(origin.trim());
+    const destinationEncoded = encodeURIComponent(destination.trim());
+    
+    const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${originEncoded}&destination=${destinationEncoded}&key=${GOOGLE_MAPS_API_KEY}&mode=driving`;
+    
+    console.log(`🗺️ Getting directions from "${origin}" to "${destination}"`);
+    
+    const response = await axios.get(url);
+    
+    if (response.data.status === 'OK' && response.data.routes.length > 0) {
+      const route = response.data.routes[0];
+      const leg = route.legs[0];
+      
+      const points = decodePolyline(route.overview_polyline.points);
+      
+      res.json({
+        success: true,
+        route: {
+          coordinates: points,
+          distance: leg.distance.text,
+          duration: leg.duration.text,
+          distanceValue: leg.distance.value,
+          durationValue: leg.duration.value,
+          startAddress: leg.start_address,
+          endAddress: leg.end_address,
+          startLocation: leg.start_location,
+          endLocation: leg.end_location,
+        }
+      });
+    } else if (response.data.status === 'ZERO_RESULTS') {
+      res.status(404).json({
+        success: false,
+        error: 'No route found between these locations'
+      });
+    } else {
+      console.error(`❌ Directions API error: ${response.data.status}`);
+      res.status(400).json({
+        success: false,
+        error: `Failed to get directions: ${response.data.status}`
+      });
+    }
+  } catch (error) {
+    console.error('Directions API error:', error.message);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch directions'
+    });
+  }
+});
+
+// Places Autocomplete
 app.post("/api/places/autocomplete", authenticateToken, async (req, res) => {
-  const { input, location, radius = 50000 } = req.body; // radius in meters
+  const { input, location, radius = 50000 } = req.body;
 
   if (!input || !input.trim()) {
     return res.status(400).json({ error: "Search input is required" });
@@ -885,12 +1378,10 @@ app.post("/api/places/autocomplete", authenticateToken, async (req, res) => {
   try {
     let url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(input.trim())}&key=${GOOGLE_MAPS_API_KEY}`;
     
-    // Add location bias if provided
     if (location && location.latitude && location.longitude) {
       url += `&location=${location.latitude},${location.longitude}&radius=${radius}`;
     }
     
-    // Restrict to India (optional - remove if you want global results)
     url += '&components=country:in';
     
     console.log(`🔍 Places autocomplete for: "${input}"`);
@@ -930,7 +1421,7 @@ app.post("/api/places/autocomplete", authenticateToken, async (req, res) => {
   }
 });
 
-// New API: Get Place Details from Place ID
+// Get Place Details
 app.post("/api/places/details", authenticateToken, async (req, res) => {
   const { place_id } = req.body;
 
@@ -976,7 +1467,8 @@ app.post("/api/places/details", authenticateToken, async (req, res) => {
   }
 });
 
-// -------- Original Profile APIs --------
+// -------- PROFILE APIs --------
+
 app.get("/profile/:role/:id", authenticateToken, (req, res) => {
   const { role, id } = req.params;
   if (!["Consumer", "Driver"].includes(role)) {
@@ -1072,14 +1564,16 @@ app.get("/health", (req, res) => {
   res.json({
     status: "OK",
     timestamp: new Date().toISOString(),
-    server: "SoberFolks API with Location Services",
+    server: "SoberFolks API with Complete Booking System",
     features: [
       "Authentication",
       "Location Tracking",
-      "Ride Booking",
-      "Driver Matching",
-      "Geocoding"
-    ]
+      "Driver Queue Management",
+      "Ride Booking with Timeout",
+      "Real-time Driver Matching",
+      "Geocoding & Directions"
+    ],
+    activeRideRequests: pendingRideRequests.size
   });
 });
 
@@ -1095,11 +1589,13 @@ app.use((req, res) => {
 
 // -------- Start Server --------
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`✅ SoberFolks API with Location Services running at http://0.0.0.0:${PORT}`);
-  console.log(`📍 Location features enabled:`);
-  console.log(`   - Real-time location tracking`);
-  console.log(`   - Nearby driver matching`);
-  console.log(`   - Distance-based fare calculation`);
-  console.log(`   - Geocoding services`);
-  console.log(`   - Ride booking and management`);
+  console.log(`✅ SoberFolks API running at http://0.0.0.0:${PORT}`);
+  console.log(`📍 Features enabled:`);
+  console.log(`   ✓ Real-time location tracking`);
+  console.log(`   ✓ Driver queue management (top 3 nearest)`);
+  console.log(`   ✓ 30-second timeout per driver`);
+  console.log(`   ✓ Automatic driver rotation`);
+  console.log(`   ✓ Distance-based fare calculation`);
+  console.log(`   ✓ Google Maps integration`);
+  console.log(`   ✓ Ride booking and management\n`);
 });
