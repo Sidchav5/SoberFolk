@@ -11,7 +11,8 @@ import {
   Alert,
   PermissionsAndroid,
   Platform,
-  BackHandler
+  BackHandler,
+  Linking
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
@@ -22,11 +23,10 @@ import Geolocation from '@react-native-community/geolocation';
 const API_URLS = [
   "http://192.168.1.2:5000",    // New IP
   "http://10.139.99.126:5000",  // Original IP
+  "http://10.219.191.57:5000",
 ];
 
-const API_BASE_URL = __DEV__ 
-  ? API_URLS[1]  // Change index to 0 or 1 to switch
-  : "https://your-production-api.com";
+const API_BASE_URL = "http://10.113.181.57:5000";  // For local development
 
 const DriverScreen: React.FC = () => {
   const navigation = useNavigation<any>();
@@ -42,12 +42,56 @@ const DriverScreen: React.FC = () => {
   // Booking system states
   const [pendingRides, setPendingRides] = useState<any[]>([]);
   const [pollingInterval, setPollingInterval] = useState<any>(null);
-    // Active ride state
-    const [activeRide, setActiveRide] = useState<any>(null);
+  // Active ride state
+  const [activeRide, setActiveRide] = useState<any>(null);
+
   // Hardcoded ride data
-  // Replace the hardcoded rides with:
-const [recentRides, setRecentRides] = useState<any[]>([]);
-const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const hardcodedRides = [
+    {
+      id: 1,
+      pickup: "MG Road, Bangalore",
+      drop: "Koramangala 5th Block",
+      fare: 185,
+      rating: 4.8,
+      date: "2025-01-15",
+      time: "14:30",
+      distance: "4.2 km",
+      duration: "18 min"
+    },
+    {
+      id: 2,
+      pickup: "Indiranagar Metro Station",
+      drop: "HSR Layout",
+      fare: 220,
+      rating: 4.5,
+      date: "2025-01-14",
+      time: "09:15",
+      distance: "5.7 km",
+      duration: "22 min"
+    },
+    {
+      id: 3,
+      pickup: "Whitefield Main Road",
+      drop: "Marathahalli Bridge",
+      fare: 150,
+      rating: 4.9,
+      date: "2025-01-13",
+      time: "17:45",
+      distance: "3.5 km",
+      duration: "15 min"
+    },
+    {
+      id: 4,
+      pickup: "Jayanagar 4th Block",
+      drop: "BTM Layout",
+      fare: 120,
+      rating: 4.7,
+      date: "2025-01-12",
+      time: "11:20",
+      distance: "2.8 km",
+      duration: "12 min"
+    }
+  ];
 
   // Handle Android Back Button
   useEffect(() => {
@@ -199,19 +243,7 @@ const [isLoadingHistory, setIsLoadingHistory] = useState(false);
       setLocationLoading(false);
     }
   };
-  const fetchRideHistory = async () => {
-    try {
-      setIsLoadingHistory(true);
-      const token = await AsyncStorage.getItem("authToken");
-      const res = await fetch(`${API_BASE_URL}/api/rides/history?page=1&limit=20`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await res.json();
-      if (res.ok) setRecentRides(data.rides || []);
-    } finally {
-      setIsLoadingHistory(false);
-    }
-  };
+
   // Fetch Stored Location from Server
   const fetchStoredLocation = async () => {
     try {
@@ -270,7 +302,6 @@ const [isLoadingHistory, setIsLoadingHistory] = useState(false);
     fetchProfile();
     fetchStoredLocation();
     fetchActiveRide();
-    fetchRideHistory(); 
   }, []);
 
   // Auto-update location when driver becomes available
@@ -375,9 +406,6 @@ const [isLoadingHistory, setIsLoadingHistory] = useState(false);
     }
   };
 
-    // Fetch active ride for driver
-    // ... existing code ...
-
   // Fetch active ride for driver
   const fetchActiveRide = async () => {
     try {
@@ -401,7 +429,6 @@ const [isLoadingHistory, setIsLoadingHistory] = useState(false);
       setActiveRide(null);
     }
   };
-  // Remove the extra }; on line 431
 
   // Poll active ride every 10 seconds
   useEffect(() => {
@@ -424,68 +451,184 @@ const [isLoadingHistory, setIsLoadingHistory] = useState(false);
     }
   }, [activeRide]);
 
-  // Fetch pending rides
-    // Start ride function
-    const handleStartRide = async (rideId: number) => {
-      try {
-        const token = await AsyncStorage.getItem("authToken");
-        const response = await fetch(`${API_BASE_URL}/api/rides/${rideId}/start`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-  
-        const data = await response.json();
-  
-        if (response.ok) {
-          Alert.alert("Trip Started! 🚗", "You've started the trip. Drive safely!");
-          fetchActiveRide(); // Refresh active ride
+  // ===== GOOGLE MAPS NAVIGATION FUNCTIONS =====
+
+  // Function to open Google Maps with navigation
+  const openGoogleMapsNavigation = (driverLat: number, driverLon: number, customerLat: number, customerLon: number) => {
+    console.log("🗺️ Opening Google Maps navigation...");
+    console.log("📍 Driver location:", driverLat, driverLon);
+    console.log("📍 Customer location:", customerLat, customerLon);
+    
+    // Google Maps URL format for navigation
+    const googleMapsUrl = `https://www.google.com/maps/dir/${driverLat},${driverLon}/${customerLat},${customerLon}/@${driverLat},${driverLon},15z/data=!4m2!4m1!3e0`;
+    
+    // Alternative: Use maps:// for iOS (opens Apple Maps if Google Maps not installed)
+    const mapsUrl = `maps://maps.google.com/maps/dir/${driverLat},${driverLon}/${customerLat},${customerLon}`;
+    
+    console.log("🔗 Google Maps URL:", googleMapsUrl);
+    
+    // Try to open Google Maps first, fallback to Apple Maps on iOS
+    Linking.canOpenURL(googleMapsUrl)
+      .then((supported) => {
+        console.log("📱 Can open Google Maps URL:", supported);
+        if (supported) {
+          return Linking.openURL(googleMapsUrl);
         } else {
-          Alert.alert("Error", data.error || "Failed to start ride");
+          console.log("📱 Trying Apple Maps fallback...");
+          // Fallback to Apple Maps on iOS
+          return Linking.openURL(mapsUrl);
         }
-      } catch (error) {
-        Alert.alert("Error", "Network error occurred");
+      })
+      .catch((err) => {
+        console.error('❌ Error opening maps:', err);
+        Alert.alert(
+          'Navigation Error',
+          'Unable to open navigation. Please open Google Maps manually.',
+          [
+            { text: 'OK', style: 'default' },
+            { 
+              text: 'Open Google Maps', 
+              onPress: () => Linking.openURL('https://play.google.com/store/apps/details?id=com.google.android.apps.maps')
+            }
+          ]
+        );
+      });
+  };
+
+  // Function to get driver's current location for navigation
+  const getCurrentDriverLocation = async () => {
+    try {
+      console.log("📍 Getting driver's current location...");
+      const token = await AsyncStorage.getItem("authToken");
+      const response = await fetch(`${API_BASE_URL}/api/location/current`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+      
+      if (response.ok && data.latitude && data.longitude) {
+        console.log("✅ Driver location found:", data.latitude, data.longitude);
+        return {
+          latitude: data.latitude,
+          longitude: data.longitude
+        };
       }
-    };
-  
-    // Complete ride function
-    const handleCompleteRide = async (rideId: number) => {
-      Alert.alert(
-        "Complete Ride",
-        "Are you sure you want to complete this ride?",
-        [
-          { text: "Cancel", style: "cancel" },
-          {
-            text: "Complete",
-            onPress: async () => {
-              try {
-                const token = await AsyncStorage.getItem("authToken");
-                const response = await fetch(`${API_BASE_URL}/api/rides/${rideId}/complete`, {
-                  method: "POST",
-                  headers: {
-                    Authorization: `Bearer ${token}`,
-                  },
-                });
-  
-                const data = await response.json();
-  
-                if (response.ok) {
-                  Alert.alert("Ride Completed! ✅", "Great job! The ride has been completed.");
-                  setActiveRide(null);
-                  fetchActiveRide();
-                  fetchRideHistory(); // Refresh
-                } else {
-                  Alert.alert("Error", data.error || "Failed to complete ride");
-                }
-              } catch (error) {
-                Alert.alert("Error", "Network error occurred");
+      console.log("❌ No driver location found in response:", data);
+      return null;
+    } catch (error) {
+      console.error("❌ Error getting driver location:", error);
+      return null;
+    }
+  };
+
+  // Enhanced start ride function with navigation
+  const handleStartRideWithNavigation = async (rideId: number, customerLocation: any) => {
+    try {
+      console.log("🚗 Starting ride with navigation...", { rideId, customerLocation });
+      
+      // First, start the ride in your backend
+      const token = await AsyncStorage.getItem("authToken");
+      const response = await fetch(`${API_BASE_URL}/api/rides/${rideId}/start`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+
+      if (response.ok ) {
+        console.log("✅ Ride started successfully");
+        
+        // Get driver's current location
+        const driverLocation = await getCurrentDriverLocation();
+        
+        if (driverLocation) {
+          console.log("✅ Driver location found, opening navigation...");
+          // Open Google Maps with navigation
+          openGoogleMapsNavigation(
+            driverLocation.latitude,
+            driverLocation.longitude,
+            customerLocation.latitude,
+            customerLocation.longitude
+          );
+          
+          Alert.alert(
+            "🚗 Navigation Started!",
+            "Google Maps has opened with turn-by-turn directions to your customer. Follow the route to reach the pickup location.",
+            [{ text: "Got it!", style: "default" }]
+          );
+        } else {
+          console.log("❌ No driver location found");
+          Alert.alert(
+            "Location Error",
+            "Unable to get your current location. Please ensure location services are enabled.",
+            [{ text: "OK", style: "default" }]
+          );
+        }
+      } else {
+        throw new Error(data.error || "Failed to start ride");
+      }
+    } catch (error) {
+      console.error("❌ Start ride error:", error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+      Alert.alert("Error", `Failed to start ride: ${errorMessage}`);
+    }
+    
+  };
+
+  // Start ride function (updated to use navigation)
+  const handleStartRide = async (rideId: number) => {
+    console.log("🚗 Starting ride...", { rideId, activeRide });
+    if (activeRide && activeRide.pickup) {
+      console.log("📍 Customer pickup location:", activeRide.pickup);
+      await handleStartRideWithNavigation(rideId, activeRide.pickup);
+      fetchActiveRide(); // Refresh active ride
+    } else {
+      console.log("❌ No active ride or pickup location found");
+      Alert.alert("Error", "No active ride or pickup location found");
+    }
+  };
+
+  // Complete ride function
+  const handleCompleteRide = async (rideId: number) => {
+    Alert.alert(
+      "Complete Ride",
+      "Are you sure you want to complete this ride?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Complete",
+          onPress: async () => {
+            try {
+              const token = await AsyncStorage.getItem("authToken");
+              const response = await fetch(`${API_BASE_URL}/api/rides/${rideId}/complete`, {
+                method: "POST",
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              });
+
+              const data = await response.json();
+
+              if (response.ok) {
+                Alert.alert("Ride Completed! ✅", "Great job! The ride has been completed.");
+                setActiveRide(null);
+                fetchActiveRide(); // Refresh
+              } else {
+                Alert.alert("Error", data.error || "Failed to complete ride");
               }
+            } catch (error) {
+              Alert.alert("Error", "Network error occurred");
             }
           }
-        ]
-      );
-    };
+        }
+      ]
+    );
+  };
 
   // Toggle Availability
   const toggleAvailability = async (value: boolean) => {
@@ -693,76 +836,12 @@ const [isLoadingHistory, setIsLoadingHistory] = useState(false);
           </ScrollView>
         );
 
-        case "rides":
-          return (
-            <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-              <Text style={styles.title}>Recent Rides</Text>
-              
-              {isLoadingHistory ? (
-                <View style={styles.emptyState}>
-                  <ActivityIndicator size="large" color="#6E44FF" />
-                  <Text style={styles.emptyStateText}>Loading ride history...</Text>
-                </View>
-              ) : recentRides.length === 0 ? (
-                <View style={styles.emptyState}>
-                  <LinearGradient
-                    colors={['#FF6B6B', '#6E44FF']}
-                    style={styles.emptyStateIconContainer}
-                  >
-                    <Image
-                      source={{ uri: "https://cdn-icons-png.flaticon.com/512/2972/2972185.png" }}
-                      style={styles.emptyStateIcon}
-                    />
-                  </LinearGradient>
-                  <Text style={styles.emptyStateText}>No rides yet</Text>
-                  <Text style={styles.emptyStateSubText}>Complete your first ride to see it here!</Text>
-                </View>
-              ) : (
-                recentRides.map((ride) => (
-                  <View key={ride.id} style={styles.rideCard}>
-                    <View style={styles.rideHeader}>
-                      <Text style={styles.rideDate}>
-                        {new Date(ride.createdAt).toLocaleDateString()} at {new Date(ride.createdAt).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}
-                      </Text>
-                      <View style={styles.ratingBadge}>
-                        <Image source={{ uri: "https://cdn-icons-png.flaticon.com/512/1828/1828884.png" }} style={styles.starIcon} />
-                        <Text style={styles.ratingText}>{ride.rating ?? '—'}</Text>
-                      </View>
-                    </View>
-                    
-                    <View style={styles.rideDetails}>
-                      <View style={styles.locationRow}>
-                        <View style={[styles.dot, styles.pickupDot]} />
-                        <Text style={styles.locationText}>{ride.pickup?.address}</Text>
-                      </View>
-                      
-                      <View style={styles.dividerLine} />
-                      
-                      <View style={styles.locationRow}>
-                        <View style={[styles.dot, styles.dropDot]} />
-                        <Text style={styles.locationText}>{ride.drop?.address}</Text>
-                      </View>
-                    </View>
-                    
-                    <View style={styles.rideFooter}>
-                      <View style={styles.rideStat}>
-                        <Image source={{ uri: "https://cdn-icons-png.flaticon.com/512/854/854878.png" }} style={styles.statIcon} />
-                        <Text style={styles.statText}>{ride.distance} km</Text>
-                      </View>
-                      <View style={styles.fareContainer}>
-                        <Text style={styles.fareText}>₹{ride.fare}</Text>
-                      </View>
-                    </View>
-                  </View>
-                ))
-              )}
-            </ScrollView>
-          );
+      case "rides":
         return (
           <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
             <Text style={styles.title}>Recent Rides</Text>
             
-            {/* {hardcodedRides.map((ride) => (
+            {hardcodedRides.map((ride) => (
               <View key={ride.id} style={styles.rideCard}>
                 <View style={styles.rideHeader}>
                   <Text style={styles.rideDate}>{ride.date} at {ride.time}</Text>
@@ -802,357 +881,103 @@ const [isLoadingHistory, setIsLoadingHistory] = useState(false);
                   </View>
                 </View>
               </View>
-            ))} */}
+            ))}
           </ScrollView>
         );
 
-        case "status":
-          return (
-            <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-              <Text style={styles.title}>Current Status</Text>
-              
-              {/* Active Ride Section */}
-              {activeRide && (
-                <View style={styles.activeRideSection}>
-                  <LinearGradient
-                    colors={['#00C853', '#00E676']}
-                    style={styles.activeRideCard}
-                  >
-                    {/* POC Notice */}
-                    <View style={styles.pocNoticeBanner}>
-                      <Text style={styles.pocNoticeText}>
-                        🤖 POC AUTO-MODE: Ride will complete in 5 minutes
-                      </Text>
-                    </View>
-  
-                    <Text style={styles.activeRideTitle}>
-                      {activeRide.status === 'accepted' ? '🚗 Active Ride - On the way' : '🛣️ Trip in Progress'}
-                    </Text>
-                    
-                    <View style={styles.activeRideDetails}>
-                      <View style={styles.activeRideRow}>
-                        <Text style={styles.activeRideLabel}>Consumer:</Text>
-                        <Text style={styles.activeRideValue}>{activeRide.consumer?.name || 'N/A'}</Text>
-                      </View>
-                      <View style={styles.activeRideRow}>
-                        <Text style={styles.activeRideLabel}>Phone:</Text>
-                        <Text style={styles.activeRideValue}>{activeRide.consumer?.phone || 'N/A'}</Text>
-                      </View>
-                      <View style={styles.activeRideRow}>
-                        <Text style={styles.activeRideLabel}>Pickup:</Text>
-                        <Text style={styles.activeRideValue} numberOfLines={2}>
-                          {activeRide.pickup.address}
-                        </Text>
-                      </View>
-                      <View style={styles.activeRideRow}>
-                        <Text style={styles.activeRideLabel}>Drop:</Text>
-                        <Text style={styles.activeRideValue} numberOfLines={2}>
-                          {activeRide.drop.address}
-                        </Text>
-                      </View>
-                      <View style={styles.activeRideRow}>
-                        <Text style={styles.activeRideLabel}>Distance:</Text>
-                        <Text style={styles.activeRideValue}>{activeRide.distance} km</Text>
-                      </View>
-                      <View style={styles.activeRideRow}>
-                        <Text style={styles.activeRideLabel}>Fare:</Text>
-                        <Text style={styles.activeRideFare}>₹{activeRide.fare}</Text>
-                      </View>
-                    </View>
-  
-                    {/* Action Buttons */}
-                    <View style={styles.activeRideActions}>
-                      {activeRide.status === 'accepted' && (
-                        <TouchableOpacity
-                          style={styles.startRideButton}
-                          onPress={() => handleStartRide(activeRide.id)}
-                        >
-                          <Text style={styles.startRideButtonText}>▶️ Start Trip</Text>
-                        </TouchableOpacity>
-                      )}
-                      
-                      {activeRide.status === 'in_progress' && (
-                        <TouchableOpacity
-                          style={styles.completeRideButton}
-                          onPress={() => handleCompleteRide(activeRide.id)}
-                        >
-                          <Text style={styles.completeRideButtonText}>✓ Complete Ride</Text>
-                        </TouchableOpacity>
-                      )}
-                      
-                      <TouchableOpacity
-                        style={styles.callConsumerButton}
-                        onPress={() => {
-                          Alert.alert(
-                            "Call Consumer",
-                            `Would you like to call ${activeRide.consumer?.name}?\n${activeRide.consumer?.phone}`,
-                            [
-                              { text: "Cancel", style: "cancel" },
-                              { text: "Call", onPress: () => console.log("Calling consumer...") }
-                            ]
-                          );
-                        }}
-                      >
-                        <Text style={styles.callConsumerButtonText}>📞 Call</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </LinearGradient>
-                </View>
-              )}
-              
-              {/* Pending Ride Requests */}
-              {pendingRides.length > 0 && (
-                <View style={styles.pendingRidesSection}>
-                  <Text style={styles.pendingRidesTitle}>🔔 Incoming Ride Request</Text>
-                  {pendingRides.map((ride) => (
-                    <LinearGradient
-                      key={ride.rideId}
-                      colors={['#FF6B6B', '#6E44FF']}
-                      style={styles.pendingRideCard}
-                    >
-                      <Text style={styles.pendingRideLabel}>Pickup Location:</Text>
-                      <Text style={styles.pendingRideValue}>{ride.pickupAddress}</Text>
-                      
-                      <Text style={styles.pendingRideLabel}>Drop Location:</Text>
-                      <Text style={styles.pendingRideValue}>{ride.dropAddress}</Text>
-                      
-                      <View style={styles.pendingRideStats}>
-                        <View style={styles.pendingRideStat}>
-                          <Text style={styles.pendingRideStatLabel}>Distance to Pickup</Text>
-                          <Text style={styles.pendingRideStatValue}>{ride.distanceToPickup} km</Text>
-                        </View>
-                        <View style={styles.pendingRideStat}>
-                          <Text style={styles.pendingRideStatLabel}>Total Distance</Text>
-                          <Text style={styles.pendingRideStatValue}>{ride.totalDistance} km</Text>
-                        </View>
-                        <View style={styles.pendingRideStat}>
-                          <Text style={styles.pendingRideStatLabel}>Fare</Text>
-                          <Text style={styles.pendingRideStatValue}>₹{ride.fare}</Text>
-                        </View>
-                      </View>
-                      
-                      <View style={styles.pendingRideActions}>
-                        <TouchableOpacity
-                          style={styles.acceptButton}
-                          onPress={() => handleAcceptRide(ride.rideId)}
-                        >
-                          <Text style={styles.acceptButtonText}>✓ Accept</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={styles.rejectButton}
-                          onPress={() => handleRejectRide(ride.rideId)}
-                        >
-                          <Text style={styles.rejectButtonText}>✗ Reject</Text>
-                        </TouchableOpacity>
-                      </View>
-                    </LinearGradient>
-                  ))}
-                </View>
-              )}
-              
-              <LinearGradient
-                colors={['#FF6B6B', '#6E44FF']}
-                start={{x: 0, y: 0}}
-                end={{x: 1, y: 1}}
-                style={styles.statusCard}
-              >
-                <Text style={styles.statusCardTitle}>Driver Status Overview</Text>
-                
-                <View style={styles.statusItem}>
-                  <Image source={{ uri: "https://cdn-icons-png.flaticon.com/512/3474/3474362.png" }} style={styles.statusIcon} />
-                  <Text style={styles.statusLabel}>Pending Requests: {pendingRides.length}</Text>
-                </View>
-                
-                <View style={styles.statusItem}>
-                  <Image source={{ uri: "https://cdn-icons-png.flaticon.com/512/190/190411.png" }} style={styles.statusIcon} />
-                  <Text style={styles.statusLabel}>
-                    Status: {driver.isAvailable ? "Available" : "Offline"}
-                  </Text>
-                </View>
-                
-                <View style={styles.statusItem}>
-                  <Image source={{ uri: "https://cdn-icons-png.flaticon.com/512/3135/3135716.png" }} style={styles.statusIcon} />
-                  <Text style={styles.statusLabel}>Active Ride: {activeRide ? 'Yes' : 'No'}</Text>
-                </View>
-                
-                <View style={styles.statusItem}>
-                  <Image source={{ uri: "https://cdn-icons-png.flaticon.com/512/477/477406.png" }} style={styles.statusIcon} />
-                  <Text style={styles.statusLabel}>Overall Rating: 4.8</Text>
-                </View>
-              </LinearGradient>
-            </ScrollView>
-          );
-          return (
-            <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-              <Text style={styles.title}>Current Status</Text>
-              
-              {/* Active Ride Section */}
-              {activeRide && (
-                <View style={styles.activeRideSection}>
-                  <LinearGradient
-                    colors={['#00C853', '#00E676']}
-                    style={styles.activeRideCard}
-                  >
-                    <Text style={styles.activeRideTitle}>
-                      {activeRide.status === 'accepted' ? '🚗 Active Ride - On the way' : '🛣️ Trip in Progress'}
-                    </Text>
-                    
-                    <View style={styles.activeRideDetails}>
-                      <View style={styles.activeRideRow}>
-                        <Text style={styles.activeRideLabel}>Consumer:</Text>
-                        <Text style={styles.activeRideValue}>{activeRide.consumer?.name || 'N/A'}</Text>
-                      </View>
-                      <View style={styles.activeRideRow}>
-                        <Text style={styles.activeRideLabel}>Phone:</Text>
-                        <Text style={styles.activeRideValue}>{activeRide.consumer?.phone || 'N/A'}</Text>
-                      </View>
-                      <View style={styles.activeRideRow}>
-                        <Text style={styles.activeRideLabel}>Pickup:</Text>
-                        <Text style={styles.activeRideValue} numberOfLines={2}>
-                          {activeRide.pickup.address}
-                        </Text>
-                      </View>
-                      <View style={styles.activeRideRow}>
-                        <Text style={styles.activeRideLabel}>Drop:</Text>
-                        <Text style={styles.activeRideValue} numberOfLines={2}>
-                          {activeRide.drop.address}
-                        </Text>
-                      </View>
-                      <View style={styles.activeRideRow}>
-                        <Text style={styles.activeRideLabel}>Distance:</Text>
-                        <Text style={styles.activeRideValue}>{activeRide.distance} km</Text>
-                      </View>
-                      <View style={styles.activeRideRow}>
-                        <Text style={styles.activeRideLabel}>Fare:</Text>
-                        <Text style={styles.activeRideFare}>₹{activeRide.fare}</Text>
-                      </View>
-                    </View>
-  
-                    {/* Action Buttons */}
-                    <View style={styles.activeRideActions}>
-                      {activeRide.status === 'accepted' && (
-                        <TouchableOpacity
-                          style={styles.startRideButton}
-                          onPress={() => handleStartRide(activeRide.id)}
-                        >
-                          <Text style={styles.startRideButtonText}>▶️ Start Trip</Text>
-                        </TouchableOpacity>
-                      )}
-                      
-                      {activeRide.status === 'in_progress' && (
-                        <TouchableOpacity
-                          style={styles.completeRideButton}
-                          onPress={() => handleCompleteRide(activeRide.id)}
-                        >
-                          <Text style={styles.completeRideButtonText}>✓ Complete Ride</Text>
-                        </TouchableOpacity>
-                      )}
-                      
-                      <TouchableOpacity
-                        style={styles.callConsumerButton}
-                        onPress={() => {
-                          Alert.alert(
-                            "Call Consumer",
-                            `Would you like to call ${activeRide.consumer?.name}?\n${activeRide.consumer?.phone}`,
-                            [
-                              { text: "Cancel", style: "cancel" },
-                              { text: "Call", onPress: () => console.log("Calling consumer...") }
-                            ]
-                          );
-                        }}
-                      >
-                        <Text style={styles.callConsumerButtonText}>📞 Call</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </LinearGradient>
-                </View>
-              )}
-              
-              {/* Pending Ride Requests */}
-              {pendingRides.length > 0 && (
-                <View style={styles.pendingRidesSection}>
-                  <Text style={styles.pendingRidesTitle}>🔔 Incoming Ride Request</Text>
-                  {pendingRides.map((ride) => (
-                    <LinearGradient
-                      key={ride.rideId}
-                      colors={['#FF6B6B', '#6E44FF']}
-                      style={styles.pendingRideCard}
-                    >
-                      <Text style={styles.pendingRideLabel}>Pickup Location:</Text>
-                      <Text style={styles.pendingRideValue}>{ride.pickupAddress}</Text>
-                      
-                      <Text style={styles.pendingRideLabel}>Drop Location:</Text>
-                      <Text style={styles.pendingRideValue}>{ride.dropAddress}</Text>
-                      
-                      <View style={styles.pendingRideStats}>
-                        <View style={styles.pendingRideStat}>
-                          <Text style={styles.pendingRideStatLabel}>Distance to Pickup</Text>
-                          <Text style={styles.pendingRideStatValue}>{ride.distanceToPickup} km</Text>
-                        </View>
-                        <View style={styles.pendingRideStat}>
-                          <Text style={styles.pendingRideStatLabel}>Total Distance</Text>
-                          <Text style={styles.pendingRideStatValue}>{ride.totalDistance} km</Text>
-                        </View>
-                        <View style={styles.pendingRideStat}>
-                          <Text style={styles.pendingRideStatLabel}>Fare</Text>
-                          <Text style={styles.pendingRideStatValue}>₹{ride.fare}</Text>
-                        </View>
-                      </View>
-                      
-                      <View style={styles.pendingRideActions}>
-                        <TouchableOpacity
-                          style={styles.acceptButton}
-                          onPress={() => handleAcceptRide(ride.rideId)}
-                        >
-                          <Text style={styles.acceptButtonText}>✓ Accept</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={styles.rejectButton}
-                          onPress={() => handleRejectRide(ride.rideId)}
-                        >
-                          <Text style={styles.rejectButtonText}>✗ Reject</Text>
-                        </TouchableOpacity>
-                      </View>
-                    </LinearGradient>
-                  ))}
-                </View>
-              )}
-              
-              <LinearGradient
-                colors={['#FF6B6B', '#6E44FF']}
-                start={{x: 0, y: 0}}
-                end={{x: 1, y: 1}}
-                style={styles.statusCard}
-              >
-                <Text style={styles.statusCardTitle}>Driver Status Overview</Text>
-                
-                <View style={styles.statusItem}>
-                  <Image source={{ uri: "https://cdn-icons-png.flaticon.com/512/3474/3474362.png" }} style={styles.statusIcon} />
-                  <Text style={styles.statusLabel}>Pending Requests: {pendingRides.length}</Text>
-                </View>
-                
-                <View style={styles.statusItem}>
-                  <Image source={{ uri: "https://cdn-icons-png.flaticon.com/512/190/190411.png" }} style={styles.statusIcon} />
-                  <Text style={styles.statusLabel}>
-                    Status: {driver.isAvailable ? "Available" : "Offline"}
-                  </Text>
-                </View>
-                
-                <View style={styles.statusItem}>
-                  <Image source={{ uri: "https://cdn-icons-png.flaticon.com/512/3135/3135716.png" }} style={styles.statusIcon} />
-                  <Text style={styles.statusLabel}>Active Ride: {activeRide ? 'Yes' : 'No'}</Text>
-                </View>
-                
-                <View style={styles.statusItem}>
-                  <Image source={{ uri: "https://cdn-icons-png.flaticon.com/512/477/477406.png" }} style={styles.statusIcon} />
-                  <Text style={styles.statusLabel}>Overall Rating: 4.8</Text>
-                </View>
-              </LinearGradient>
-            </ScrollView>
-          );
+      case "status":
         return (
           <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
             <Text style={styles.title}>Current Status</Text>
+            
+            {/* Active Ride Section */}
+            {activeRide && (
+              <View style={styles.activeRideSection}>
+                <LinearGradient
+                  colors={['#00C853', '#00E676']}
+                  style={styles.activeRideCard}
+                >
+                  {/* POC Notice */}
+                  <View style={styles.pocNoticeBanner}>
+                    <Text style={styles.pocNoticeText}>
+                      🤖 POC AUTO-MODE: Ride will complete in 5 minutes
+                    </Text>
+                  </View>
+
+                  <Text style={styles.activeRideTitle}>
+                    {activeRide.status === 'accepted' ? '🚗 Active Ride - On the way' : '🛣️ Trip in Progress'}
+                  </Text>
+                  
+                  <View style={styles.activeRideDetails}>
+                    <View style={styles.activeRideRow}>
+                      <Text style={styles.activeRideLabel}>Consumer:</Text>
+                      <Text style={styles.activeRideValue}>{activeRide.consumer?.name || 'N/A'}</Text>
+                    </View>
+                    <View style={styles.activeRideRow}>
+                      <Text style={styles.activeRideLabel}>Phone:</Text>
+                      <Text style={styles.activeRideValue}>{activeRide.consumer?.phone || 'N/A'}</Text>
+                    </View>
+                    <View style={styles.activeRideRow}>
+                      <Text style={styles.activeRideLabel}>Pickup:</Text>
+                      <Text style={styles.activeRideValue} numberOfLines={2}>
+                        {activeRide.pickup.address}
+                      </Text>
+                    </View>
+                    <View style={styles.activeRideRow}>
+                      <Text style={styles.activeRideLabel}>Drop:</Text>
+                      <Text style={styles.activeRideValue} numberOfLines={2}>
+                        {activeRide.drop.address}
+                      </Text>
+                    </View>
+                    <View style={styles.activeRideRow}>
+                      <Text style={styles.activeRideLabel}>Distance:</Text>
+                      <Text style={styles.activeRideValue}>{activeRide.distance} km</Text>
+                    </View>
+                    <View style={styles.activeRideRow}>
+                      <Text style={styles.activeRideLabel}>Fare:</Text>
+                      <Text style={styles.activeRideFare}>₹{activeRide.fare}</Text>
+                    </View>
+                  </View>
+
+                  {/* Action Buttons */}
+                  <View style={styles.activeRideActions}>
+                    {activeRide.status === 'accepted' && (
+                      <TouchableOpacity
+                        style={styles.startRideButton}
+                        onPress={() => handleStartRide(activeRide.id)}
+                      >
+                        <Text style={styles.startRideButtonText}>🗺️ Start Trip & Navigate</Text>
+                      </TouchableOpacity>
+                    )}
+                    
+                    {activeRide.status === 'in_progress' && (
+                      <TouchableOpacity
+                        style={styles.completeRideButton}
+                        onPress={() => handleCompleteRide(activeRide.id)}
+                      >
+                        <Text style={styles.completeRideButtonText}>✓ Complete Ride</Text>
+                      </TouchableOpacity>
+                    )}
+                    
+                    <TouchableOpacity
+                      style={styles.callConsumerButton}
+                      onPress={() => {
+                        Alert.alert(
+                          "Call Consumer",
+                          `Would you like to call ${activeRide.consumer?.name}?\n${activeRide.consumer?.phone}`,
+                          [
+                            { text: "Cancel", style: "cancel" },
+                            { text: "Call", onPress: () => console.log("Calling consumer...") }
+                          ]
+                        );
+                      }}
+                    >
+                      <Text style={styles.callConsumerButtonText}>📞 Call</Text>
+                    </TouchableOpacity>
+                  </View>
+                </LinearGradient>
+              </View>
+            )}
             
             {/* Pending Ride Requests */}
             {pendingRides.length > 0 && (
@@ -1226,7 +1051,7 @@ const [isLoadingHistory, setIsLoadingHistory] = useState(false);
               
               <View style={styles.statusItem}>
                 <Image source={{ uri: "https://cdn-icons-png.flaticon.com/512/3135/3135716.png" }} style={styles.statusIcon} />
-                <Text style={styles.statusLabel}>Today's Earnings: ₹0</Text>
+                <Text style={styles.statusLabel}>Active Ride: {activeRide ? 'Yes' : 'No'}</Text>
               </View>
               
               <View style={styles.statusItem}>
@@ -2001,162 +1826,125 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     letterSpacing: 0.5,
   },
-    // Active Ride Styles
-    activeRideSection: {
-      marginBottom: 24,
-    },
-    activeRideCard: {
-      padding: 24,
-      borderRadius: 24,
-      shadowColor: '#00C853',
-      shadowOffset: { width: 0, height: 8 },
-      shadowOpacity: 0.35,
-      shadowRadius: 16,
-      elevation: 12,
-      borderWidth: 2,
-      borderColor: 'rgba(255, 255, 255, 0.3)',
-    },
-    activeRideTitle: {
-      fontSize: 20,
-      fontWeight: '900',
-      color: '#FFFFFF',
-      marginBottom: 20,
-      textAlign: 'center',
-      letterSpacing: -0.3,
-    },
-    activeRideDetails: {
-      backgroundColor: 'rgba(255, 255, 255, 0.15)',
-      borderRadius: 16,
-      padding: 16,
-      marginBottom: 16,
-    },
-    activeRideRow: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      marginBottom: 12,
-      alignItems: 'flex-start',
-    },
-    activeRideLabel: {
-      fontSize: 13,
-      fontWeight: '700',
-      color: 'rgba(255, 255, 255, 0.9)',
-      width: 80,
-    },
-    activeRideValue: {
-      fontSize: 14,
-      color: '#FFFFFF',
-      fontWeight: '600',
-      flex: 1,
-      textAlign: 'right',
-    },
-    activeRideFare: {
-      fontSize: 20,
-      fontWeight: '900',
-      color: '#FFD700',
-      letterSpacing: -0.5,
-    },
-    activeRideActions: {
-      flexDirection: 'row',
-      gap: 12,
-    },
-    startRideButton: {
-      flex: 1,
-      backgroundColor: '#FFFFFF',
-      paddingVertical: 16,
-      borderRadius: 16,
-      alignItems: 'center',
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.3,
-      shadowRadius: 8,
-      elevation: 8,
-    },
-    startRideButtonText: {
-      color: '#00C853',
-      fontSize: 16,
-      fontWeight: '900',
-    },
-    completeRideButton: {
-      flex: 1,
-      backgroundColor: '#FFFFFF',
-      paddingVertical: 16,
-      borderRadius: 16,
-      alignItems: 'center',
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.3,
-      shadowRadius: 8,
-      elevation: 8,
-    },
-    completeRideButtonText: {
-      color: '#00C853',
-      fontSize: 16,
-      fontWeight: '900',
-    },
-    callConsumerButton: {
-      flex: 1,
-      backgroundColor: 'rgba(255, 255, 255, 0.3)',
-      paddingVertical: 16,
-      borderRadius: 16,
-      alignItems: 'center',
-      borderWidth: 2,
-      borderColor: 'rgba(255, 255, 255, 0.5)',
-    },
-    callConsumerButtonText: {
-      color: '#FFFFFF',
-      fontSize: 16,
-      fontWeight: '800',
-    },
-    emptyState: {
-      alignItems: 'center',
-      padding: 50,
-    },
-    emptyStateIconContainer: {
-      width: 90,
-      height: 90,
-      borderRadius: 45,
-      justifyContent: 'center',
-      alignItems: 'center',
-      marginBottom: 28,
-      shadowColor: '#6E44FF',
-      shadowOffset: { width: 0, height: 8 },
-      shadowOpacity: 0.3,
-      shadowRadius: 16,
-      elevation: 12,
-    },
-    emptyStateIcon: {
-      width: 45,
-      height: 45,
-      tintColor: '#FFFFFF',
-    },
-    emptyStateText: {
-      fontSize: 20,
-      fontWeight: '800',
-      color: '#2D3436',
-      marginBottom: 10,
-      textAlign: 'center',
-      letterSpacing: -0.3,
-    },
-    emptyStateSubText: {
-      fontSize: 14,
-      color: '#636E72',
-      textAlign: 'center',
-      fontWeight: '500',
-      lineHeight: 20,
-    },
-    pocNoticeBanner: {
-      backgroundColor: 'rgba(255, 193, 7, 0.9)',
-      borderRadius: 12,
-      padding: 12,
-      marginBottom: 16,
-      borderWidth: 2,
-      borderColor: '#FFA000',
-    },
-    pocNoticeText: {
-      fontSize: 13,
-      color: '#000000',
-      fontWeight: '800',
-      textAlign: 'center',
-      letterSpacing: 0.3,
-    },
+  // Active Ride Styles
+  activeRideSection: {
+    marginBottom: 24,
+  },
+  activeRideCard: {
+    padding: 24,
+    borderRadius: 24,
+    shadowColor: '#00C853',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.35,
+    shadowRadius: 16,
+    elevation: 12,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  activeRideTitle: {
+    fontSize: 20,
+    fontWeight: '900',
+    color: '#FFFFFF',
+    marginBottom: 20,
+    textAlign: 'center',
+    letterSpacing: -0.3,
+  },
+  activeRideDetails: {
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+  },
+  activeRideRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+    alignItems: 'flex-start',
+  },
+  activeRideLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: 'rgba(255, 255, 255, 0.9)',
+    width: 80,
+  },
+  activeRideValue: {
+    fontSize: 14,
+    color: '#FFFFFF',
+    fontWeight: '600',
+    flex: 1,
+    textAlign: 'right',
+  },
+  activeRideFare: {
+    fontSize: 20,
+    fontWeight: '900',
+    color: '#FFD700',
+    letterSpacing: -0.5,
+  },
+  activeRideActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  startRideButton: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 16,
+    borderRadius: 16,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  startRideButtonText: {
+    color: '#00C853',
+    fontSize: 16,
+    fontWeight: '900',
+  },
+  completeRideButton: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 16,
+    borderRadius: 16,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  completeRideButtonText: {
+    color: '#00C853',
+    fontSize: 16,
+    fontWeight: '900',
+  },
+  callConsumerButton: {
+    flex: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    paddingVertical: 16,
+    borderRadius: 16,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.5)',
+  },
+  callConsumerButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  pocNoticeBanner: {
+    backgroundColor: 'rgba(255, 193, 7, 0.9)',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
+    borderWidth: 2,
+    borderColor: '#FFA000',
+  },
+  pocNoticeText: {
+    fontSize: 13,
+    color: '#000000',
+    fontWeight: '800',
+    textAlign: 'center',
+    letterSpacing: 0.3,
+  },
 });

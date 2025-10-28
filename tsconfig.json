@@ -3,7 +3,8 @@
   "compilerOptions": {
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "jsx": "react-jsx"
   },
   "include": ["**/*.ts", "**/*.tsx"],
   "exclude": ["node_modules", "Pods"]
