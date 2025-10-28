@@ -32,10 +32,11 @@ const DEFAULT_REGION = {
 // Try multiple IPs for local network flexibility
 const API_URLS = [
   "http://192.168.1.2:5000",    // New IP
-  "http://10.139.99.126:5000",  // Original IP
+  "http://10.139.99.126:5000",
+  "http://10.219.191.57:5000",  // Original IP
 ];
 
-const API_BASE_URL = API_URLS[1];  // Change index to 0 or 1 to switch
+const API_BASE_URL = "http://10.113.181.57:5000"; // For local development;  // Change index to 0 or 1 to switch
 // Helper function to calculate distance
 const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
   const R = 6371; // Earth's radius in km

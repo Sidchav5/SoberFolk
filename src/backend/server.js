@@ -1,10 +1,11 @@
-// server.js - Enhanced with Location Services and Complete Booking System
+// server.js - Enhanced with Location Services, Complete Booking System, and Geohashing
 
 const express = require("express");
 const cors = require("cors");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const db = require("./db"); // Your db.js connection file
+const ngeohash = require('ngeohash'); // Geohashing library
 require("dotenv").config();
 
 const app = express();
@@ -14,6 +15,10 @@ const JWT_SECRET = process.env.JWT_SECRET || "3cd55083223f2738ec3b05d633a6c3e555
 // Booking System Configuration
 const RIDE_REQUEST_TIMEOUT = 120000; // 30 seconds
 const pendingRideRequests = new Map(); // Store active ride requests
+
+// Geohash Configuration
+const GEOHASH_PRECISION = 6; // ~1.2km accuracy
+const GEOHASH_NEIGHBORS_PRECISION = 5; // ~4.9km accuracy for expanding search
 
 // -------- Middleware --------
 app.use(cors()); // Allow all origins for React Native
@@ -60,6 +65,50 @@ const calculateFare = (distanceKm) => {
   const baseFare = 50; // Base fare in rupees
   const perKmRate = 15; // Rate per km
   return Math.round(baseFare + (distanceKm * perKmRate));
+};
+
+// -------- Geohash Utility Functions --------
+// Generate geohash for coordinates
+const generateGeohash = (latitude, longitude) => {
+  return ngeohash.encode(latitude, longitude, GEOHASH_PRECISION);
+};
+
+// Get neighboring geohashes for expanded search
+const getNeighboringGeohashes = (latitude, longitude) => {
+  const baseGeohash = ngeohash.encode(latitude, longitude, GEOHASH_NEIGHBORS_PRECISION);
+  return ngeohash.neighbors(baseGeohash);
+};
+
+// Update location with geohash
+const updateLocationWithGeohash = (userId, latitude, longitude, address, role) => {
+  const geohash = generateGeohash(latitude, longitude);
+  const table = role === "Consumer" ? "consumer_locations" : "driver_locations";
+  
+  const updateQuery = `
+    UPDATE ${table} 
+    SET latitude = ?, longitude = ?, address = ?, geohash = ?, updated_at = NOW() 
+    WHERE user_id = ?
+  `;
+
+  return new Promise((resolve, reject) => {
+    db.query(updateQuery, [latitude, longitude, address, geohash, userId], (err, result) => {
+      if (err) {
+        reject(err);
+      } else if (result.affectedRows === 0) {
+        // Insert new location if doesn't exist
+        const insertQuery = `
+          INSERT INTO ${table} (user_id, latitude, longitude, address, geohash, created_at, updated_at)
+          VALUES (?, ?, ?, ?, ?, NOW(), NOW())
+        `;
+        db.query(insertQuery, [userId, latitude, longitude, address, geohash], (insertErr) => {
+          if (insertErr) reject(insertErr);
+          else resolve();
+        });
+      } else {
+        resolve();
+      }
+    });
+  });
 };
 
 // Google Maps API configuration
@@ -407,9 +456,9 @@ app.post("/login", (req, res) => {
   });
 });
 
-// -------- LOCATION-RELATED APIs --------
+// -------- LOCATION-RELATED APIs WITH GEOHASH --------
 
-// Update User Location (for both consumers and drivers)
+// Update User Location (for both consumers and drivers) - WITH GEOHASH
 app.post("/api/location/update", authenticateToken, async (req, res) => {
   const { latitude, longitude, address } = req.body;
   const { id, role } = req.user;
@@ -435,52 +484,22 @@ app.post("/api/location/update", authenticateToken, async (req, res) => {
     }
   }
 
-  const table = role === "Consumer" ? "consumer_locations" : "driver_locations";
-  
-  const updateQuery = `
-    UPDATE ${table} 
-    SET latitude = ?, longitude = ?, address = ?, updated_at = NOW() 
-    WHERE user_id = ?
-  `;
-
-  db.query(updateQuery, [latitude, longitude, locationAddress, id], (err, result) => {
-    if (err) {
-      console.error("Location update error:", err);
-      return res.status(500).json({ error: "Failed to update location" });
-    }
-
-    if (result.affectedRows === 0) {
-      const insertQuery = `
-        INSERT INTO ${table} (user_id, latitude, longitude, address, created_at, updated_at)
-        VALUES (?, ?, ?, ?, NOW(), NOW())
-      `;
-
-      db.query(insertQuery, [id, latitude, longitude, locationAddress], (insertErr) => {
-        if (insertErr) {
-          console.error("Location insert error:", insertErr);
-          return res.status(500).json({ error: "Failed to save location" });
-        }
-
-        res.json({
-          message: "Location saved successfully",
-          location: { 
-            latitude: parseFloat(latitude), 
-            longitude: parseFloat(longitude), 
-            address: locationAddress 
-          }
-        });
-      });
-    } else {
-      res.json({
-        message: "Location updated successfully",
-        location: { 
-          latitude: parseFloat(latitude), 
-          longitude: parseFloat(longitude), 
-          address: locationAddress 
-        }
-      });
-    }
-  });
+  try {
+    await updateLocationWithGeohash(id, latitude, longitude, locationAddress, role);
+    
+    res.json({
+      message: "Location updated successfully",
+      location: { 
+        latitude: parseFloat(latitude), 
+        longitude: parseFloat(longitude), 
+        address: locationAddress,
+        geohash: generateGeohash(latitude, longitude)
+      }
+    });
+  } catch (error) {
+    console.error("Location update error:", error);
+    res.status(500).json({ error: "Failed to update location" });
+  }
 });
 
 // Get User's Current Location
@@ -505,14 +524,15 @@ app.get("/api/location/current", authenticateToken, (req, res) => {
       latitude: parseFloat(location.latitude),
       longitude: parseFloat(location.longitude),
       address: location.address,
+      geohash: location.geohash,
       lastUpdated: location.updated_at
     });
   });
 });
 
-// -------- ENHANCED RIDE BOOKING WITH DRIVER QUEUE --------
+// -------- ENHANCED RIDE BOOKING WITH GEOHASH DRIVER QUEUE --------
 
-// Find Nearby Available Drivers
+// Find Nearby Available Drivers - WITH GEOHASH
 app.post("/api/rides/find-drivers", authenticateToken, async (req, res) => {
   const { pickupLocation } = req.body;
   const consumerId = req.user.id;
@@ -526,24 +546,44 @@ app.post("/api/rides/find-drivers", authenticateToken, async (req, res) => {
   }
 
   try {
+    const userLat = parseFloat(pickupLocation.latitude);
+    const userLon = parseFloat(pickupLocation.longitude);
+    
+    // Get primary geohash and neighboring geohashes
+    const primaryGeohash = generateGeohash(userLat, userLon);
+    const neighboringGeohashes = getNeighboringGeohashes(userLat, userLon);
+    const allGeohashes = [primaryGeohash, ...neighboringGeohashes];
+    
+    console.log(`🔍 Searching for drivers in geohashes: ${allGeohashes.join(', ')}`);
+
+    // Build geohash query - search in primary geohash first, then neighbors
+    const geohashConditions = allGeohashes.map(() => 'dl.geohash LIKE ?').join(' OR ');
+    const geohashParams = allGeohashes.map(hash => `${hash}%`);
+
     const query = `
       SELECT 
         d.id, d.full_name, d.phone, d.scooter_model, d.profile_photo,
-        dl.latitude, dl.longitude, dl.address, dl.updated_at
+        dl.latitude, dl.longitude, dl.address, dl.updated_at, dl.geohash,
+        CASE 
+          WHEN dl.geohash LIKE ? THEN 1  -- Primary geohash gets priority
+          ELSE 2  -- Neighboring geohashes get lower priority
+        END as priority
       FROM drivers d
       INNER JOIN driver_locations dl ON d.id = dl.user_id
       WHERE d.is_available = 1 
       AND dl.updated_at > DATE_SUB(NOW(), INTERVAL 30 MINUTE)
+      AND (${geohashConditions})
+      ORDER BY priority ASC, dl.updated_at DESC
+      LIMIT 10
     `;
 
-    db.query(query, (err, results) => {
+    const queryParams = [`${primaryGeohash}%`, ...geohashParams];
+
+    db.query(query, queryParams, (err, results) => {
       if (err) {
         console.error("Find drivers error:", err);
         return res.status(500).json({ error: "Failed to find drivers" });
       }
-
-      const userLat = parseFloat(pickupLocation.latitude);
-      const userLon = parseFloat(pickupLocation.longitude);
 
       const driversWithDistance = results
         .map(driver => {
@@ -563,32 +603,43 @@ app.post("/api/rides/find-drivers", authenticateToken, async (req, res) => {
               address: driver.address
             },
             distanceFromPickup: Math.round(distance * 100) / 100,
-            lastSeen: driver.updated_at
+            lastSeen: driver.updated_at,
+            geohash: driver.geohash,
+            priority: driver.priority
           };
         })
-        .filter(driver => driver.distanceFromPickup <= 10)
-        .sort((a, b) => a.distanceFromPickup - b.distanceFromPickup)
+        .filter(driver => driver.distanceFromPickup <= 10) // Still filter by distance for accuracy
+        .sort((a, b) => {
+          // Sort by priority first, then by distance
+          if (a.priority !== b.priority) {
+            return a.priority - b.priority;
+          }
+          return a.distanceFromPickup - b.distanceFromPickup;
+        })
         .slice(0, 3);
 
-      console.log(`\n🚗 === DRIVER QUEUE FOR CONSUMER ${consumerId} ===`);
+      console.log(`\n🚗 === GEOHASH DRIVER SEARCH ===`);
       console.log(`📍 Pickup Location: ${userLat.toFixed(4)}, ${userLon.toFixed(4)}`);
+      console.log(`🗺️ Primary Geohash: ${primaryGeohash}`);
       console.log(`👥 Available Drivers Found: ${driversWithDistance.length}\n`);
       
       driversWithDistance.forEach((driver, index) => {
         console.log(`${index + 1}. Driver ID: ${driver.id} | Name: ${driver.fullName}`);
-        console.log(`   Distance: ${driver.distanceFromPickup} km | Scooter: ${driver.scooterModel}`);
-        console.log(`   Location: ${driver.location.latitude.toFixed(4)}, ${driver.location.longitude.toFixed(4)}\n`);
+        console.log(`   Distance: ${driver.distanceFromPickup} km | Geohash: ${driver.geohash}`);
+        console.log(`   Priority: ${driver.priority === 1 ? 'Primary' : 'Neighbor'}\n`);
       });
 
       if (driversWithDistance.length === 0) {
-        console.log("❌ No available drivers found within 10km radius\n");
+        console.log("❌ No available drivers found in nearby geohashes\n");
       }
 
       res.json({
         success: true,
         drivers: driversWithDistance,
         totalFound: driversWithDistance.length,
-        searchRadius: 10
+        searchRadius: 10,
+        geohash: primaryGeohash,
+        searchMethod: 'geohash'
       });
     });
   } catch (error) {
@@ -916,7 +967,6 @@ global.pocTimeouts.set(capturedRideId, { startTimeout, completeTimeout });
     );
   });
 });
-// Auto-free driver if ride not completed within 2 hours
 
 // Reject Ride
 app.post("/api/rides/:rideId/reject", authenticateToken, (req, res) => {
@@ -994,6 +1044,7 @@ app.get("/api/rides/:rideId/status", authenticateToken, (req, res) => {
     acceptedDriverId: rideRequest.acceptedDriverId || null
   });
 });
+
 // Get Active Ride for Consumer or Driver
 app.get("/api/rides/active", authenticateToken, (req, res) => {
   const { id, role } = req.user;
@@ -1086,6 +1137,7 @@ app.get("/api/rides/active", authenticateToken, (req, res) => {
     });
   });
 });
+
 // Get User's Ride History
 app.get("/api/rides/history", authenticateToken, (req, res) => {
   const { id, role } = req.user;
@@ -1094,31 +1146,29 @@ app.get("/api/rides/history", authenticateToken, (req, res) => {
 
   let query, params;
 
-  // Lines 1072-1094 - Update the queries to filter completed rides:
-
-if (role === "Consumer") {
-  query = `
-    SELECT 
-      r.*, d.full_name as driver_name, d.phone as driver_phone, d.scooter_model
-    FROM rides r
-    LEFT JOIN drivers d ON r.driver_id = d.id
-    WHERE r.consumer_id = ? AND r.status = 'completed'
-    ORDER BY r.created_at DESC
-    LIMIT ? OFFSET ?
-  `;
-  params = [id, parseInt(limit), parseInt(offset)];
-} else {
-  query = `
-    SELECT 
-      r.*, c.full_name as consumer_name, c.phone as consumer_phone
-    FROM rides r
-    LEFT JOIN consumers c ON r.consumer_id = c.id
-    WHERE r.driver_id = ? AND r.status = 'completed'
-    ORDER BY r.created_at DESC
-    LIMIT ? OFFSET ?
-  `;
-  params = [id, parseInt(limit), parseInt(offset)];
-}
+  if (role === "Consumer") {
+    query = `
+      SELECT 
+        r.*, d.full_name as driver_name, d.phone as driver_phone, d.scooter_model
+      FROM rides r
+      LEFT JOIN drivers d ON r.driver_id = d.id
+      WHERE r.consumer_id = ? AND r.status = 'completed'
+      ORDER BY r.created_at DESC
+      LIMIT ? OFFSET ?
+    `;
+    params = [id, parseInt(limit), parseInt(offset)];
+  } else {
+    query = `
+      SELECT 
+        r.*, c.full_name as consumer_name, c.phone as consumer_phone
+      FROM rides r
+      LEFT JOIN consumers c ON r.consumer_id = c.id
+      WHERE r.driver_id = ? AND r.status = 'completed'
+      ORDER BY r.created_at DESC
+      LIMIT ? OFFSET ?
+    `;
+    params = [id, parseInt(limit), parseInt(offset)];
+  }
 
   db.query(query, params, (err, results) => {
     if (err) {
@@ -1564,14 +1614,15 @@ app.get("/health", (req, res) => {
   res.json({
     status: "OK",
     timestamp: new Date().toISOString(),
-    server: "SoberFolks API with Complete Booking System",
+    server: "SoberFolks API with Complete Booking System and Geohashing",
     features: [
       "Authentication",
-      "Location Tracking",
+      "Location Tracking with Geohashing",
       "Driver Queue Management",
       "Ride Booking with Timeout",
       "Real-time Driver Matching",
-      "Geocoding & Directions"
+      "Geocoding & Directions",
+      "Geohash-based Driver Search"
     ],
     activeRideRequests: pendingRideRequests.size
   });
@@ -1591,11 +1642,12 @@ app.use((req, res) => {
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`✅ SoberFolks API running at http://0.0.0.0:${PORT}`);
   console.log(`📍 Features enabled:`);
-  console.log(`   ✓ Real-time location tracking`);
-  console.log(`   ✓ Driver queue management (top 3 nearest)`);
+  console.log(`   ✓ Real-time location tracking with geohashing`);
+  console.log(`   ✓ Geohash-based driver queue management (top 3 nearest)`);
   console.log(`   ✓ 30-second timeout per driver`);
   console.log(`   ✓ Automatic driver rotation`);
   console.log(`   ✓ Distance-based fare calculation`);
   console.log(`   ✓ Google Maps integration`);
-  console.log(`   ✓ Ride booking and management\n`);
+  console.log(`   ✓ Ride booking and management`);
+  console.log(`   ✓ Geohash precision: ${GEOHASH_PRECISION} (~1.2km accuracy)\n`);
 });

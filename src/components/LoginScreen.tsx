@@ -21,11 +21,10 @@ import { useNavigation } from '@react-navigation/native';
 const API_URLS = [
   "http://192.168.1.2:5000",    // New IP
   "http://10.139.99.126:5000",  // Original IP
+  "http://10.219.191.57:5000",
 ];
 
-const API_BASE_URL = __DEV__ 
-  ? API_URLS[1]  // Change index to 0 or 1 to switch
-  : 'https://your-production-api.com';
+const API_BASE_URL = "http://10.113.181.57:5000"; // For local development
 
 const { width, height } = Dimensions.get('window');
 
