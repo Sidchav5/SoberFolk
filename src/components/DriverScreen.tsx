@@ -26,7 +26,7 @@ const API_URLS = [
   "http://10.219.191.57:5000",
 ];
 
-const API_BASE_URL = "http://10.113.181.57:5000";  // For local development
+const API_BASE_URL = "http://10.113.181.126:5000";  // For local development
 
 const DriverScreen: React.FC = () => {
   const navigation = useNavigation<any>();
@@ -40,58 +40,39 @@ const DriverScreen: React.FC = () => {
   const [locationLoading, setLocationLoading] = useState(false);
 
   // Booking system states
-  const [pendingRides, setPendingRides] = useState<any[]>([]);
-  const [pollingInterval, setPollingInterval] = useState<any>(null);
-  // Active ride state
-  const [activeRide, setActiveRide] = useState<any>(null);
+const [pendingRides, setPendingRides] = useState<any[]>([]);
+const [pollingInterval, setPollingInterval] = useState<any>(null);
+// Active ride state
+const [activeRide, setActiveRide] = useState<any>(null);
+// Recent rides state
+const [recentRides, setRecentRides] = useState<any[]>([]);
+const [isLoadingHistory, setIsLoadingHistory] = useState(false);
 
-  // Hardcoded ride data
-  const hardcodedRides = [
-    {
-      id: 1,
-      pickup: "MG Road, Bangalore",
-      drop: "Koramangala 5th Block",
-      fare: 185,
-      rating: 4.8,
-      date: "2025-01-15",
-      time: "14:30",
-      distance: "4.2 km",
-      duration: "18 min"
-    },
-    {
-      id: 2,
-      pickup: "Indiranagar Metro Station",
-      drop: "HSR Layout",
-      fare: 220,
-      rating: 4.5,
-      date: "2025-01-14",
-      time: "09:15",
-      distance: "5.7 km",
-      duration: "22 min"
-    },
-    {
-      id: 3,
-      pickup: "Whitefield Main Road",
-      drop: "Marathahalli Bridge",
-      fare: 150,
-      rating: 4.9,
-      date: "2025-01-13",
-      time: "17:45",
-      distance: "3.5 km",
-      duration: "15 min"
-    },
-    {
-      id: 4,
-      pickup: "Jayanagar 4th Block",
-      drop: "BTM Layout",
-      fare: 120,
-      rating: 4.7,
-      date: "2025-01-12",
-      time: "11:20",
-      distance: "2.8 km",
-      duration: "12 min"
+  // Remove lines 48-94 (hardcodedRides array)
+
+// Add fetch ride history function
+const fetchRideHistory = async () => {
+  try {
+    setIsLoadingHistory(true);
+    const token = await AsyncStorage.getItem("authToken");
+    const response = await fetch(`${API_BASE_URL}/api/rides/history?page=1&limit=20`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const data = await response.json();
+    
+    if (response.ok && data.rides) {
+      setRecentRides(data.rides);
     }
-  ];
+  } catch (error) {
+    console.error("Failed to fetch ride history:", error);
+  } finally {
+    setIsLoadingHistory(false);
+  }
+};
 
   // Handle Android Back Button
   useEffect(() => {
@@ -302,6 +283,7 @@ const DriverScreen: React.FC = () => {
     fetchProfile();
     fetchStoredLocation();
     fetchActiveRide();
+    fetchRideHistory(); // Add this line
   }, []);
 
   // Auto-update location when driver becomes available
@@ -407,49 +389,49 @@ const DriverScreen: React.FC = () => {
   };
 
   // Fetch active ride for driver
-  const fetchActiveRide = async () => {
-    try {
-      const token = await AsyncStorage.getItem("authToken");
-      const response = await fetch(`${API_BASE_URL}/api/rides/active`, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+  // Fetch active ride for driver
+const fetchActiveRide = async () => {
+  try {
+    const token = await AsyncStorage.getItem("authToken");
+    const response = await fetch(`${API_BASE_URL}/api/rides/active`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
 
-      const data = await response.json();
+    const data = await response.json();
 
-      if (response.ok && data.success && data.ride) {
-        setActiveRide(data.ride);
-      } else {
-        setActiveRide(null);
+    if (response.ok && data.success && data.ride) {
+      setActiveRide(data.ride);
+    } else {
+      // No active ride - if we had one before, it means it completed
+      if (activeRide) {
+        console.log("✅ Ride completed, refreshing history...");
+        await fetchRideHistory();
       }
-    } catch (error) {
-      console.error("Failed to fetch active ride:", error);
       setActiveRide(null);
     }
-  };
+  } catch (error) {
+    console.error("Failed to fetch active ride:", error);
+    setActiveRide(null);
+  }
+};
 
   // Poll active ride every 10 seconds
-  useEffect(() => {
-    if (activeRide) {
-      const pollInterval = setInterval(() => {
-        fetchActiveRide();
-        
-        // Auto-check if ride is completed
-        if (activeRide.status === 'completed') {
-          Alert.alert(
-            "Ride Completed! ✅",
-            "The ride has been automatically completed (POC mode).\nYou're now available for new rides!",
-            [{ text: "OK", onPress: () => setActiveRide(null) }]
-          );
-          clearInterval(pollInterval);
-        }
-      }, 10000); // Poll every 10 seconds
+  // Poll active ride every 10 seconds
+useEffect(() => {
+  if (activeRide) {
+    const pollInterval = setInterval(async () => {
+      await fetchActiveRide();
+    }, 10000); // Poll every 10 seconds
 
-      return () => clearInterval(pollInterval);
-    }
-  }, [activeRide]);
+    return () => clearInterval(pollInterval);
+  } else {
+    // No active ride - refresh history to show any newly completed rides
+    fetchRideHistory();
+  }
+}, [activeRide]);
 
   // ===== GOOGLE MAPS NAVIGATION FUNCTIONS =====
 
@@ -594,41 +576,43 @@ const DriverScreen: React.FC = () => {
   };
 
   // Complete ride function
-  const handleCompleteRide = async (rideId: number) => {
-    Alert.alert(
-      "Complete Ride",
-      "Are you sure you want to complete this ride?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Complete",
-          onPress: async () => {
-            try {
-              const token = await AsyncStorage.getItem("authToken");
-              const response = await fetch(`${API_BASE_URL}/api/rides/${rideId}/complete`, {
-                method: "POST",
-                headers: {
-                  Authorization: `Bearer ${token}`,
-                },
-              });
+  // Complete ride function
+const handleCompleteRide = async (rideId: number) => {
+  Alert.alert(
+    "Complete Ride",
+    "Are you sure you want to complete this ride?",
+    [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Complete",
+        onPress: async () => {
+          try {
+            const token = await AsyncStorage.getItem("authToken");
+            const response = await fetch(`${API_BASE_URL}/api/rides/${rideId}/complete`, {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            });
 
-              const data = await response.json();
+            const data = await response.json();
 
-              if (response.ok) {
-                Alert.alert("Ride Completed! ✅", "Great job! The ride has been completed.");
-                setActiveRide(null);
-                fetchActiveRide(); // Refresh
-              } else {
-                Alert.alert("Error", data.error || "Failed to complete ride");
-              }
-            } catch (error) {
-              Alert.alert("Error", "Network error occurred");
+            if (response.ok) {
+              Alert.alert("Ride Completed! ✅", "Great job! The ride has been completed.");
+              setActiveRide(null);
+              fetchActiveRide(); // Refresh
+              await fetchRideHistory(); // Refresh history to show completed ride
+            } else {
+              Alert.alert("Error", data.error || "Failed to complete ride");
             }
+          } catch (error) {
+            Alert.alert("Error", "Network error occurred");
           }
         }
-      ]
-    );
-  };
+      }
+    ]
+  );
+};
 
   // Toggle Availability
   const toggleAvailability = async (value: boolean) => {
@@ -836,12 +820,144 @@ const DriverScreen: React.FC = () => {
           </ScrollView>
         );
 
-      case "rides":
+        case "rides":
+          return (
+            <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+              <Text style={styles.title}>Recent Rides</Text>
+              
+              {isLoadingHistory ? (
+                <View style={styles.emptyState}>
+                  <ActivityIndicator size="large" color="#6E44FF" />
+                  <Text style={styles.emptyStateText}>Loading ride history...</Text>
+                </View>
+              ) : recentRides.length === 0 ? (
+                <View style={styles.emptyState}>
+                  <LinearGradient
+                    colors={['#FF6B6B', '#6E44FF']}
+                    style={styles.emptyStateIconContainer}
+                  >
+                    <Image
+                      source={{ uri: "https://cdn-icons-png.flaticon.com/512/2972/2972185.png" }}
+                      style={styles.emptyStateIcon}
+                    />
+                  </LinearGradient>
+                  <Text style={styles.emptyStateText}>No rides yet</Text>
+                  <Text style={styles.emptyStateSubText}>Your completed rides will appear here!</Text>
+                </View>
+              ) : (
+                <>
+                  {recentRides.map((ride) => (
+                    <View key={ride.id} style={styles.rideCard}>
+                      <View style={styles.rideHeader}>
+                        <Text style={styles.rideDate}>
+                          {new Date(ride.createdAt).toLocaleDateString()} • {new Date(ride.createdAt).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}
+                        </Text>
+                        <View style={styles.statusBadge}>
+                          <Text style={styles.statusText}>COMPLETED</Text>
+                        </View>
+                      </View>
+                      
+                      <View style={styles.rideDetails}>
+                        <View style={styles.locationRow}>
+                          <View style={[styles.dot, styles.pickupDot]} />
+                          <Text style={styles.locationText}>{ride.pickup.address}</Text>
+                        </View>
+                        
+                        <View style={styles.dividerLine} />
+                        
+                        <View style={styles.locationRow}>
+                          <View style={[styles.dot, styles.dropDot]} />
+                          <Text style={styles.locationText}>{ride.drop.address}</Text>
+                        </View>
+                      </View>
+                      
+                      <View style={styles.rideFooter}>
+                        <View style={styles.rideStat}>
+                          <Image source={{ uri: "https://cdn-icons-png.flaticon.com/512/854/854878.png" }} style={styles.statIcon} />
+                          <Text style={styles.statText}>{ride.distance} km</Text>
+                        </View>
+                        
+                        <View style={styles.fareContainer}>
+                          <Text style={styles.fareText}>₹{ride.fare}</Text>
+                        </View>
+                      </View>
+                    </View>
+                  ))}
+                </>
+              )}
+            </ScrollView>
+          );
+  return (
+    <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <Text style={styles.title}>Recent Rides</Text>
+      
+      {isLoadingHistory ? (
+        <View style={styles.emptyState}>
+          <ActivityIndicator size="large" color="#6E44FF" />
+          <Text style={styles.emptyStateText}>Loading ride history...</Text>
+        </View>
+      ) : recentRides.length === 0 ? (
+        <View style={styles.emptyState}>
+          <LinearGradient
+            colors={['#FF6B6B', '#6E44FF']}
+            style={styles.emptyStateIconContainer}
+          >
+            <Image
+              source={{ uri: "https://cdn-icons-png.flaticon.com/512/2972/2972185.png" }}
+              style={styles.emptyStateIcon}
+            />
+          </LinearGradient>
+          <Text style={styles.emptyStateText}>No rides yet</Text>
+          <Text style={styles.emptyStateSubText}>Your completed rides will appear here!</Text>
+        </View>
+      ) : (
+        <>
+          {recentRides.map((ride) => (
+            <View key={ride.id} style={styles.rideCard}>
+              <View style={styles.rideHeader}>
+                <Text style={styles.rideDate}>
+                  {new Date(ride.createdAt).toLocaleDateString()} • {new Date(ride.createdAt).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}
+                </Text>
+                <View style={styles.statusBadge}>
+                  <Text style={styles.statusText}>COMPLETED</Text>
+                </View>
+              </View>
+              
+              <View style={styles.rideDetails}>
+                <View style={styles.locationRow}>
+                  <View style={[styles.dot, styles.pickupDot]} />
+                  <Text style={styles.locationText}>{ride.pickup.address}</Text>
+                </View>
+                
+                <View style={styles.dividerLine} />
+                
+                <View style={styles.locationRow}>
+                  <View style={[styles.dot, styles.dropDot]} />
+                  <Text style={styles.locationText}>{ride.drop.address}</Text>
+                </View>
+              </View>
+              
+              <View style={styles.rideFooter}>
+                <View style={styles.rideStat}>
+                  <Image source={{ uri: "https://cdn-icons-png.flaticon.com/512/854/854878.png" }} style={styles.statIcon} />
+                  <Text style={styles.statText}>{ride.distance} km</Text>
+                </View>
+                
+                <View style={styles.fareContainer}>
+                  <Text style={styles.fareText}>₹{ride.fare}</Text>
+                </View>
+              </View>
+            </View>
+          ))}
+        </>
+      )}
+    </ScrollView>
+  );
         return (
           <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
             <Text style={styles.title}>Recent Rides</Text>
             
-            {hardcodedRides.map((ride) => (
+            {/* {hardcodedRides.map((ride) => (
               <View key={ride.id} style={styles.rideCard}>
                 <View style={styles.rideHeader}>
                   <Text style={styles.rideDate}>{ride.date} at {ride.time}</Text>
@@ -881,7 +997,7 @@ const DriverScreen: React.FC = () => {
                   </View>
                 </View>
               </View>
-            ))}
+            ))} */}
           </ScrollView>
         );
 
@@ -1946,5 +2062,42 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     textAlign: 'center',
     letterSpacing: 0.3,
+  },
+  emptyState: {
+    alignItems: 'center',
+    padding: 50,
+  },
+  emptyStateIconContainer: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 28,
+    shadowColor: '#6E44FF',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 12,
+  },
+  emptyStateIcon: {
+    width: 45,
+    height: 45,
+    tintColor: '#FFFFFF',
+  },
+  emptyStateText: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#2D3436',
+    marginBottom: 10,
+    textAlign: 'center',
+    letterSpacing: -0.3,
+  },
+  emptyStateSubText: {
+    fontSize: 14,
+    color: '#636E72',
+    textAlign: 'center',
+    fontWeight: '500',
+    lineHeight: 20,
   },
 });

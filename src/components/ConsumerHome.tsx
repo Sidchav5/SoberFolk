@@ -36,7 +36,7 @@ const API_URLS = [
   "http://10.219.191.57:5000",  // Original IP
 ];
 
-const API_BASE_URL = "http://10.113.181.57:5000"; // For local development;  // Change index to 0 or 1 to switch
+const API_BASE_URL = "http://10.113.181.126:5000"; // For local development;  // Change index to 0 or 1 to switch
 // Helper function to calculate distance
 const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
   const R = 6371; // Earth's radius in km
@@ -232,6 +232,7 @@ const [isLoadingHistory, setIsLoadingHistory] = useState(false);
     
     fetchUser();
     fetchActiveRide();
+    fetchRideHistory(); // Load initial history
     const locationTimer = setTimeout(() => {
       getCurrentLocation();
     }, 500);
@@ -496,49 +497,71 @@ const [isLoadingHistory, setIsLoadingHistory] = useState(false);
     }
   };
     // Fetch active ride for consumer
-    const fetchActiveRide = async () => {
-      setIsLoadingActiveRide(true);
-      try {
-        const token = await AsyncStorage.getItem("authToken");
-        const response = await fetch(`${API_BASE_URL}/api/rides/active`, {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-  
-        const data = await response.json();
-  
-        if (response.ok && data.success && data.ride) {
-          setActiveRide(data.ride);
-          
-          // Set map markers for active ride
-          setPickupCoords({
-            latitude: data.ride.pickup.latitude,
-            longitude: data.ride.pickup.longitude,
-          });
-          setDropCoords({
-            latitude: data.ride.drop.latitude,
-            longitude: data.ride.drop.longitude,
-          });
-          
-          // Set addresses
-          setPickup(data.ride.pickup.address);
-          setDrop(data.ride.drop.address);
-          
-          // Fetch route
-          fetchRoute(data.ride.pickup.address, data.ride.drop.address);
-        } else {
-          setActiveRide(null);
-        }
-      } catch (error) {
-        console.error("Failed to fetch active ride:", error);
+    // Fetch active ride for consumer
+const fetchActiveRide = async () => {
+  setIsLoadingActiveRide(true);
+  try {
+    const token = await AsyncStorage.getItem("authToken");
+    const response = await fetch(`${API_BASE_URL}/api/rides/active`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const data = await response.json();
+
+    if (response.ok && data.success && data.ride) {
+      // Check if status is 'completed'
+      if (data.ride.status === 'completed') {
+        // Ride just completed, refresh history and clear active ride
+        console.log("✅ Ride completed, refreshing history...");
+        await fetchRideHistory();
         setActiveRide(null);
-      } finally {
-        setIsLoadingActiveRide(false);
+        // Clear map markers
+        setPickupCoords(null);
+        setDropCoords(null);
+        setPickup("");
+        setDrop("");
+        setRouteCoordinates([]);
+        setRouteInfo(null);
+      } else {
+        setActiveRide(data.ride);
+        
+        // Set map markers for active ride
+        setPickupCoords({
+          latitude: data.ride.pickup.latitude,
+          longitude: data.ride.pickup.longitude,
+        });
+        setDropCoords({
+          latitude: data.ride.drop.latitude,
+          longitude: data.ride.drop.longitude,
+        });
+        
+        // Set addresses
+        setPickup(data.ride.pickup.address);
+        setDrop(data.ride.drop.address);
+        
+        // Fetch route
+        fetchRoute(data.ride.pickup.address, data.ride.drop.address);
       }
-    };
+    } else {
+      // No active ride found - check if we had an active ride before
+      if (activeRide) {
+        console.log("✅ Ride completed (no longer in active rides), refreshing history...");
+        await fetchRideHistory();
+      }
+      setActiveRide(null);
+    }
+  } catch (error) {
+    console.error("Failed to fetch active ride:", error);
+    setActiveRide(null);
+  } finally {
+    setIsLoadingActiveRide(false);
+  }
+};
     // Poll active ride status every 10 seconds
+// Poll active ride status every 10 seconds
 // Poll active ride status every 10 seconds
 useEffect(() => {
   if (activeRide && (activeRide.status === 'accepted' || activeRide.status === 'in_progress')) {
@@ -547,11 +570,8 @@ useEffect(() => {
     }, 10000); // Poll every 10 seconds
 
     return () => clearInterval(pollInterval);
-  } else if (activeRide && activeRide.status === 'completed') {
-    // Ride completed, refresh history
-    fetchRideHistory();
-    setActiveRide(null);
   }
+  // Don't need the else if for 'completed' anymore - fetchActiveRide handles it
 }, [activeRide]);
   // Poll for ride status
   const startRideStatusPolling = async (rideId: number) => {
