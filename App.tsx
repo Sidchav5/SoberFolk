@@ -11,6 +11,8 @@ import LoginScreen from './src/components/LoginScreen';
 import SignupScreen from './src/components/SignupScreen';
 import DriverScreen from './src/components/DriverScreen';
 import ConsumerHome from './src/components/ConsumerHome';
+import DriverFeedback from './src/components/DriverFeedback';
+import ConusmerFeedback from './src/components/ConusmerFeedback';
 
 type RootStackParamList = {
   Home: undefined;
@@ -18,6 +20,8 @@ type RootStackParamList = {
   Signup: undefined;
   DriverScreen: undefined;
   ConsumerHome: undefined;
+  DriverFeedback: { rideId: number; customerInfo?: any; rideDetails?: any } | undefined;
+  ConusmerFeedback: { rideId: number; driverInfo?: any; rideDetails?: any } | undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -73,6 +77,8 @@ const App: React.FC = () => {
         <Stack.Screen name="Signup" component={SignupScreen} />
         <Stack.Screen name="DriverScreen" component={DriverScreen} />
         <Stack.Screen name="ConsumerHome" component={ConsumerHome} />
+        <Stack.Screen name="DriverFeedback" component={DriverFeedback} />
+<Stack.Screen name="ConusmerFeedback" component={ConusmerFeedback} />
       </Stack.Navigator>
     </NavigationContainer>
   );

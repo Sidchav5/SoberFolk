@@ -26,7 +26,7 @@ const API_URLS = [
   "http://10.219.191.57:5000",
 ];
 
-const API_BASE_URL = "http://10.113.181.126:5000";  // For local development
+const API_BASE_URL = "http://10.139.99.126:5000";  // For local development
 
 const DriverScreen: React.FC = () => {
   const navigation = useNavigation<any>();
@@ -577,42 +577,75 @@ useEffect(() => {
 
   // Complete ride function
   // Complete ride function
-const handleCompleteRide = async (rideId: number) => {
-  Alert.alert(
-    "Complete Ride",
-    "Are you sure you want to complete this ride?",
-    [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Complete",
-        onPress: async () => {
-          try {
-            const token = await AsyncStorage.getItem("authToken");
-            const response = await fetch(`${API_BASE_URL}/api/rides/${rideId}/complete`, {
-              method: "POST",
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-            });
-
-            const data = await response.json();
-
-            if (response.ok) {
-              Alert.alert("Ride Completed! ✅", "Great job! The ride has been completed.");
-              setActiveRide(null);
-              fetchActiveRide(); // Refresh
-              await fetchRideHistory(); // Refresh history to show completed ride
-            } else {
-              Alert.alert("Error", data.error || "Failed to complete ride");
+  const handleCompleteRide = async (rideId: number) => {
+    Alert.alert(
+      "Complete Ride",
+      "Are you sure you want to complete this ride?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Complete",
+          onPress: async () => {
+            try {
+              const token = await AsyncStorage.getItem("authToken");
+              const response = await fetch(`${API_BASE_URL}/api/rides/${rideId}/complete`, {
+                method: "POST",
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              });
+  
+              const data = await response.json();
+  
+              if (response.ok) {
+                Alert.alert("Ride Completed! ✅", "Great job! The ride has been completed.");
+  
+                const customerInfo = activeRide?.consumer
+                  ? {
+                      name: activeRide.consumer.name,
+                      phone: activeRide.consumer.phone,
+                      profilePhoto: null,
+                    }
+                  : null;
+  
+                const rideDetails = {
+                  pickup: activeRide?.pickup?.address,
+                  drop: activeRide?.drop?.address,
+                  fare: activeRide?.fare,
+                  date: new Date().toLocaleString(),
+                };
+  
+                setActiveRide(null);
+                await fetchActiveRide();
+                await fetchRideHistory();
+  
+                Alert.alert(
+                  "Share Feedback?",
+                  "Would you like to rate this customer?",
+                  [
+                    { text: "Later", style: "cancel" },
+                    {
+                      text: "Rate Now",
+                      onPress: () =>
+                        navigation.navigate("DriverFeedback", {
+                          rideId,
+                          customerInfo,
+                          rideDetails,
+                        }),
+                    },
+                  ]
+                );
+              } else {
+                Alert.alert("Error", data.error || "Failed to complete ride");
+              }
+            } catch (error) {
+              Alert.alert("Error", "Network error occurred");
             }
-          } catch (error) {
-            Alert.alert("Error", "Network error occurred");
-          }
-        }
-      }
-    ]
-  );
-};
+          },
+        },
+      ]
+    );
+  };
 
   // Toggle Availability
   const toggleAvailability = async (value: boolean) => {

@@ -36,7 +36,7 @@ const API_URLS = [
   "http://10.219.191.57:5000",  // Original IP
 ];
 
-const API_BASE_URL = "http://10.113.181.126:5000"; // For local development;  // Change index to 0 or 1 to switch
+const API_BASE_URL = "http://10.139.99.126:5000"; // For local development;  // Change index to 0 or 1 to switch
 // Helper function to calculate distance
 const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
   const R = 6371; // Earth's radius in km
@@ -498,68 +498,86 @@ const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   };
     // Fetch active ride for consumer
     // Fetch active ride for consumer
-const fetchActiveRide = async () => {
-  setIsLoadingActiveRide(true);
-  try {
-    const token = await AsyncStorage.getItem("authToken");
-    const response = await fetch(`${API_BASE_URL}/api/rides/active`, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    const data = await response.json();
-
-    if (response.ok && data.success && data.ride) {
-      // Check if status is 'completed'
-      if (data.ride.status === 'completed') {
-        // Ride just completed, refresh history and clear active ride
-        console.log("✅ Ride completed, refreshing history...");
-        await fetchRideHistory();
+    const fetchActiveRide = async () => {
+      setIsLoadingActiveRide(true);
+      try {
+        const token = await AsyncStorage.getItem("authToken");
+        const response = await fetch(`${API_BASE_URL}/api/rides/active`, {
+          method: "GET",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+    
+        const data = await response.json();
+    
+        if (response.ok && data.success && data.ride) {
+          if (data.ride.status === 'completed') {
+            await fetchRideHistory();
+            setActiveRide(null);
+            setPickupCoords(null);
+            setDropCoords(null);
+            setPickup("");
+            setDrop("");
+            setRouteCoordinates([]);
+            setRouteInfo(null);
+          } else {
+            setActiveRide(data.ride);
+            setPickupCoords({
+              latitude: data.ride.pickup.latitude,
+              longitude: data.ride.pickup.longitude,
+            });
+            setDropCoords({
+              latitude: data.ride.drop.latitude,
+              longitude: data.ride.drop.longitude,
+            });
+            setPickup(data.ride.pickup.address);
+            setDrop(data.ride.drop.address);
+            fetchRoute(data.ride.pickup.address, data.ride.drop.address);
+          }
+        } else {
+          if (activeRide) {
+            await fetchRideHistory();
+            const latest = await (async () => {
+              const t = await AsyncStorage.getItem("authToken");
+              const res = await fetch(`${API_BASE_URL}/api/rides/history?page=1&limit=1`, {
+                headers: { Authorization: `Bearer ${t}` }
+              });
+              const d = await res.json();
+              return d?.rides?.[0];
+            })();
+    
+            if (latest) {
+              const driverInfo = latest.driver ? {
+                name: latest.driver.name,
+                phone: latest.driver.phone,
+                profilePhoto: latest.driver.profilePhoto || null,
+              } : null;
+    
+              const rideDetails = {
+                pickup: latest.pickup.address,
+                drop: latest.drop.address,
+                fare: latest.fare,
+                date: new Date(latest.createdAt).toLocaleString(),
+              };
+    
+              Alert.alert(
+                "How was your ride?",
+                "Would you like to rate your driver?",
+                [
+                  { text: "Later", style: "cancel" },
+                  { text: "Rate Now", onPress: () => navigation.navigate("ConusmerFeedback", { rideId: latest.id, driverInfo, rideDetails }) }
+                ]
+              );
+            }
+          }
+          setActiveRide(null);
+        }
+      } catch (error) {
+        console.error("Failed to fetch active ride:", error);
         setActiveRide(null);
-        // Clear map markers
-        setPickupCoords(null);
-        setDropCoords(null);
-        setPickup("");
-        setDrop("");
-        setRouteCoordinates([]);
-        setRouteInfo(null);
-      } else {
-        setActiveRide(data.ride);
-        
-        // Set map markers for active ride
-        setPickupCoords({
-          latitude: data.ride.pickup.latitude,
-          longitude: data.ride.pickup.longitude,
-        });
-        setDropCoords({
-          latitude: data.ride.drop.latitude,
-          longitude: data.ride.drop.longitude,
-        });
-        
-        // Set addresses
-        setPickup(data.ride.pickup.address);
-        setDrop(data.ride.drop.address);
-        
-        // Fetch route
-        fetchRoute(data.ride.pickup.address, data.ride.drop.address);
+      } finally {
+        setIsLoadingActiveRide(false);
       }
-    } else {
-      // No active ride found - check if we had an active ride before
-      if (activeRide) {
-        console.log("✅ Ride completed (no longer in active rides), refreshing history...");
-        await fetchRideHistory();
-      }
-      setActiveRide(null);
-    }
-  } catch (error) {
-    console.error("Failed to fetch active ride:", error);
-    setActiveRide(null);
-  } finally {
-    setIsLoadingActiveRide(false);
-  }
-};
+    };
     // Poll active ride status every 10 seconds
 // Poll active ride status every 10 seconds
 // Poll active ride status every 10 seconds
@@ -1474,22 +1492,76 @@ if (data.status === 'accepted') {
     }
   };
 
+//   
+//     <View style={styles.container}>
+//       {/* Background Elements */}
+//       <View style={styles.backgroundContainer}>
+//         <View style={[styles.decorativeCircle, styles.circle1]} />
+//         <View style={[styles.decorativeCircle, styles.circle2]} />
+//         <View style={[styles.decorativeCircle, styles.circle3]} />
+//       </View>
+
+//       {/* Header */}
+//       <View style={styles.headerContainer}>
+//         <Text style={styles.header}>Welcome back, {user ? user.fullName : "Rider"}</Text>
+//         <Text style={styles.subheader}>Ready for your next ride?</Text>
+//       </View>
+
+//       {/* Tabs */}
+//       <View style={styles.tabRow}>
+//         {[
+//           { key: "BookRide", label: "Book Ride", icon: "https://cdn-icons-png.flaticon.com/512/2972/2972185.png" },
+//           { key: "RecentRides", label: "Recent Rides", icon: "https://cdn-icons-png.flaticon.com/512/2997/2997898.png" },
+//           { key: "MyDetails", label: "My Details", icon: "https://cdn-icons-png.flaticon.com/512/1077/1077114.png" }
+//         ].map((tab) => (
+//           <TouchableOpacity
+//             key={tab.key}
+//             style={[styles.tabButton, activeTab === tab.key && styles.activeTab]}
+//             // Update the tab switching logic around line 1481:
+// onPress={() => {
+//   setActiveTab(tab.key as any);
+//   // Add this condition to refresh history when switching to Recent Rides
+//   if (tab.key === "RecentRides") {
+//     fetchRideHistory();
+//   }
+// }}
+//           >
+//             <LinearGradient
+//               colors={activeTab === tab.key ? ['#FF6B6B', '#6E44FF'] : ['#FFFFFF', '#F8FBF8']}
+//               style={styles.tabButtonContent}
+//             >
+//               <Image
+//                 source={{ uri: tab.icon }}
+//                 style={[styles.tabIcon, activeTab === tab.key && styles.activeTabIcon]}
+//               />
+//               <Text style={[styles.tabText, activeTab === tab.key && styles.activeTabText]}>
+//                 {tab.label}
+//               </Text>
+//             </LinearGradient>
+//           </TouchableOpacity>
+//         ))}
+//       </View>
+
+//       {/* Content */}
+//       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+//         {renderContent()}
+//       </ScrollView>
+//     </View>
+//   );
+// };return (
   return (
     <View style={styles.container}>
-      {/* Background Elements */}
       <View style={styles.backgroundContainer}>
         <View style={[styles.decorativeCircle, styles.circle1]} />
         <View style={[styles.decorativeCircle, styles.circle2]} />
         <View style={[styles.decorativeCircle, styles.circle3]} />
       </View>
 
-      {/* Header */}
       <View style={styles.headerContainer}>
         <Text style={styles.header}>Welcome back, {user ? user.fullName : "Rider"}</Text>
         <Text style={styles.subheader}>Ready for your next ride?</Text>
       </View>
 
-      {/* Tabs */}
       <View style={styles.tabRow}>
         {[
           { key: "BookRide", label: "Book Ride", icon: "https://cdn-icons-png.flaticon.com/512/2972/2972185.png" },
@@ -1499,14 +1571,10 @@ if (data.status === 'accepted') {
           <TouchableOpacity
             key={tab.key}
             style={[styles.tabButton, activeTab === tab.key && styles.activeTab]}
-            // Update the tab switching logic around line 1481:
-onPress={() => {
-  setActiveTab(tab.key as any);
-  // Add this condition to refresh history when switching to Recent Rides
-  if (tab.key === "RecentRides") {
-    fetchRideHistory();
-  }
-}}
+            onPress={() => {
+              setActiveTab(tab.key as any);
+              if (tab.key === "RecentRides") fetchRideHistory();
+            }}
           >
             <LinearGradient
               colors={activeTab === tab.key ? ['#FF6B6B', '#6E44FF'] : ['#FFFFFF', '#F8FBF8']}
@@ -1524,13 +1592,13 @@ onPress={() => {
         ))}
       </View>
 
-      {/* Content */}
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {renderContent()}
       </ScrollView>
     </View>
   );
-};
+}; // make sure this closes the ConsumerHome function
+
 
 const styles = StyleSheet.create({
   container: {

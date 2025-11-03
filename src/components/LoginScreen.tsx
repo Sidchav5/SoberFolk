@@ -24,7 +24,7 @@ const API_URLS = [
   "http://10.219.191.57:5000",
 ];
 
-const API_BASE_URL = "http://10.113.181.126:5000"; // For local development
+const API_BASE_URL = "http://10.139.99.126:5000"; // For local development
 
 const { width, height } = Dimensions.get('window');
 
