@@ -13,7 +13,7 @@ import DriverScreen from './src/components/DriverScreen';
 import ConsumerHome from './src/components/ConsumerHome';
 import DriverFeedback from './src/components/DriverFeedback';
 import ConusmerFeedback from './src/components/ConusmerFeedback';
-
+import 'react-native-reanimated';
 type RootStackParamList = {
   Home: undefined;
   Login: undefined;

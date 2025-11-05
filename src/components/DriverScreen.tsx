@@ -26,7 +26,7 @@ const API_URLS = [
   "http://10.219.191.57:5000",
 ];
 
-const API_BASE_URL = "http://10.139.99.126:5000";  // For local development
+const API_BASE_URL = "https://soberfolks-backend-production.up.railway.app";  // For local development
 
 const DriverScreen: React.FC = () => {
   const navigation = useNavigation<any>();
