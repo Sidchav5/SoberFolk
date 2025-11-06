@@ -12,7 +12,7 @@ import SignupScreen from './src/components/SignupScreen';
 import DriverScreen from './src/components/DriverScreen';
 import ConsumerHome from './src/components/ConsumerHome';
 import DriverFeedback from './src/components/DriverFeedback';
-import ConusmerFeedback from './src/components/ConusmerFeedback';
+import ConsumerFeedback from './src/components/ConsumerFeedback';
 import 'react-native-reanimated';
 type RootStackParamList = {
   Home: undefined;
@@ -21,7 +21,7 @@ type RootStackParamList = {
   DriverScreen: undefined;
   ConsumerHome: undefined;
   DriverFeedback: { rideId: number; customerInfo?: any; rideDetails?: any } | undefined;
-  ConusmerFeedback: { rideId: number; driverInfo?: any; rideDetails?: any } | undefined;
+  ConsumerFeedback: { rideId: number; driverInfo?: any; rideDetails?: any } | undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -78,7 +78,7 @@ const App: React.FC = () => {
         <Stack.Screen name="DriverScreen" component={DriverScreen} />
         <Stack.Screen name="ConsumerHome" component={ConsumerHome} />
         <Stack.Screen name="DriverFeedback" component={DriverFeedback} />
-<Stack.Screen name="ConusmerFeedback" component={ConusmerFeedback} />
+<Stack.Screen name="ConsumerFeedback" component={ConsumerFeedback} />
       </Stack.Navigator>
     </NavigationContainer>
   );
