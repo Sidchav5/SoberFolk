@@ -1,7 +1,8 @@
 // App.tsx
 import React, { useState, useEffect } from 'react';
-import { SafeAreaView, ScrollView, StyleSheet, StatusBar, Platform } from 'react-native';
+import { SafeAreaView, ScrollView, StyleSheet, StatusBar, Platform, ActivityIndicator, View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import OnboardingScreen from './src/components/OnboardingScreen';
 import HeroSection from './src/components/HeroSection';
@@ -28,14 +29,54 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 
 const App: React.FC = () => {
   const [showOnboarding, setShowOnboarding] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState(true);
+  const [initialRoute, setInitialRoute] = useState<keyof RootStackParamList>("Home");
 
   useEffect(() => {
-    setShowOnboarding(true); // For demo purposes, always show onboarding on app start
+    checkLoginStatus();
   }, []);
 
-  const handleOnboardingComplete = (): void => {
-    setShowOnboarding(false);
+  const checkLoginStatus = async () => {
+    try {
+      const [authToken, userRole, hasSeenOnboarding] = await Promise.all([
+        AsyncStorage.getItem('authToken'),
+        AsyncStorage.getItem('userRole'),
+        AsyncStorage.getItem('hasSeenOnboarding')
+      ]);
+
+      if (authToken && userRole) {
+        // User is logged in, navigate to appropriate screen
+        setInitialRoute(userRole === 'Driver' ? 'DriverScreen' : 'ConsumerHome');
+        setShowOnboarding(false);
+      } else if (hasSeenOnboarding) {
+        // User has seen onboarding but not logged in
+        setInitialRoute('Login');
+        setShowOnboarding(false);
+      } else {
+        // First time user
+        setShowOnboarding(true);
+      }
+    } catch (error) {
+      console.error('Error checking login status:', error);
+      setShowOnboarding(true);
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  const handleOnboardingComplete = async (): Promise<void> => {
+    await AsyncStorage.setItem('hasSeenOnboarding', 'true');
+    setShowOnboarding(false);
+    setInitialRoute('Login');
+  };
+
+  if (isLoading) {
+    return (
+      <View style={[styles.container, styles.centerContent]}>
+        <ActivityIndicator size="large" color="#6E44FF" />
+      </View>
+    );
+  }
 
   if (showOnboarding) {
     return (
@@ -53,7 +94,7 @@ const App: React.FC = () => {
   return (
     <NavigationContainer>
       <Stack.Navigator
-        initialRouteName="Home"
+        initialRouteName={initialRoute}
         screenOptions={{ headerShown: false }}
       >
         <Stack.Screen name="Home">
@@ -78,7 +119,7 @@ const App: React.FC = () => {
         <Stack.Screen name="DriverScreen" component={DriverScreen} />
         <Stack.Screen name="ConsumerHome" component={ConsumerHome} />
         <Stack.Screen name="DriverFeedback" component={DriverFeedback} />
-<Stack.Screen name="ConsumerFeedback" component={ConsumerFeedback} />
+        <Stack.Screen name="ConsumerFeedback" component={ConsumerFeedback} />
       </Stack.Navigator>
     </NavigationContainer>
   );
@@ -91,6 +132,10 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
+  },
+  centerContent: {
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 
