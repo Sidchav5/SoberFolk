@@ -92,6 +92,7 @@ const fetchRideHistory = async () => {
               await AsyncStorage.removeItem("authToken");
               await AsyncStorage.removeItem("currentUser");
               await AsyncStorage.removeItem("userRole");
+              await AsyncStorage.removeItem("hasSeenOnboarding"); // ADD THIS LINE
               
               navigation.reset({
                 index: 0,

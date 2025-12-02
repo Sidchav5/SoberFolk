@@ -1,0 +1,205 @@
+Perfect ✅ You already have a well-structured schema for your SoberFolks database (your on-demand designated driver app).
+
+Below, I’ve carefully created SQL commands to replicate the same database locally on your system — including all 12 tables (and views as normal tables if you just want data structure).
+
+You can simply copy-paste this into MySQL Workbench or the terminal after creating your database.
+
+🗄️ 1. Create Database
+CREATE DATABASE SoberFolks;
+USE SoberFolks;
+
+👤 2. Table: consumers
+CREATE TABLE consumers (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    full_name VARCHAR(100) NOT NULL,
+    email VARCHAR(100) NOT NULL UNIQUE,
+    phone VARCHAR(20) NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    gender ENUM('Male','Female','Other') NOT NULL,
+    date_of_birth DATE NOT NULL,
+    address TEXT NOT NULL,
+    aadhar_number CHAR(12) NOT NULL,
+    profile_photo LONGTEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+🛵 3. Table: drivers
+CREATE TABLE drivers (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    full_name VARCHAR(100) NOT NULL,
+    email VARCHAR(100) NOT NULL UNIQUE,
+    phone VARCHAR(20) NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    gender ENUM('Male','Female','Other') NOT NULL,
+    date_of_birth DATE NOT NULL,
+    address TEXT NOT NULL,
+    aadhar_number CHAR(12) NOT NULL,
+    license_number VARCHAR(50) NOT NULL,
+    scooter_model VARCHAR(50) NOT NULL,
+    profile_photo LONGTEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    is_available TINYINT(1) DEFAULT 0
+);
+
+📍 4. Table: consumer_locations
+CREATE TABLE consumer_locations (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    latitude DECIMAL(10,8) NOT NULL,
+    longitude DECIMAL(11,8) NOT NULL,
+    address TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    geohash VARCHAR(12),
+    INDEX(user_id),
+    INDEX(latitude),
+    INDEX(updated_at),
+    FOREIGN KEY (user_id) REFERENCES consumers(id)
+);
+
+📍 5. Table: driver_locations
+CREATE TABLE driver_locations (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    latitude DECIMAL(10,8) NOT NULL,
+    longitude DECIMAL(11,8) NOT NULL,
+    address TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    geohash VARCHAR(12),
+    INDEX(user_id),
+    INDEX(latitude),
+    INDEX(updated_at),
+    FOREIGN KEY (user_id) REFERENCES drivers(id)
+);
+
+🚗 6. Table: rides
+CREATE TABLE rides (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    consumer_id INT NOT NULL,
+    driver_id INT,
+    pickup_latitude DECIMAL(10,8) NOT NULL,
+    pickup_longitude DECIMAL(11,8) NOT NULL,
+    pickup_address TEXT,
+    drop_latitude DECIMAL(10,8) NOT NULL,
+    drop_longitude DECIMAL(11,8) NOT NULL,
+    drop_address TEXT,
+    distance_km DECIMAL(8,2) NOT NULL,
+    fare DECIMAL(10,2) NOT NULL,
+    status ENUM('pending','accepted','in_progress','completed','cancelled') DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    accepted_at TIMESTAMP NULL,
+    started_at TIMESTAMP NULL,
+    completed_at TIMESTAMP NULL,
+    cancelled_at TIMESTAMP NULL,
+    cancellation_reason TEXT,
+    rating TINYINT,
+    feedback TEXT,
+    FOREIGN KEY (consumer_id) REFERENCES consumers(id),
+    FOREIGN KEY (driver_id) REFERENCES drivers(id)
+);
+
+📦 7. Table: ride_requests
+CREATE TABLE ride_requests (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    ride_id INT NOT NULL,
+    driver_id INT NOT NULL,
+    status ENUM('sent','seen','accepted','declined','expired') DEFAULT 'sent',
+    sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    responded_at TIMESTAMP NULL,
+    expires_at TIMESTAMP NOT NULL,
+    INDEX (ride_id),
+    INDEX (driver_id),
+    FOREIGN KEY (ride_id) REFERENCES rides(id),
+    FOREIGN KEY (driver_id) REFERENCES drivers(id)
+);
+
+💰 8. Table: fare_rules
+CREATE TABLE fare_rules (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    base_fare DECIMAL(8,2) NOT NULL DEFAULT 50.00,
+    per_km_rate DECIMAL(8,2) NOT NULL DEFAULT 15.00,
+    surge_multiplier DECIMAL(4,2) NOT NULL DEFAULT 1.00,
+    min_fare DECIMAL(8,2) NOT NULL DEFAULT 50.00,
+    max_fare DECIMAL(8,2) NOT NULL DEFAULT 1000.00,
+    city VARCHAR(100) DEFAULT 'default',
+    is_active TINYINT(1) DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+💬 9. Table: feedback
+CREATE TABLE feedback (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    ride_id INT NOT NULL,
+    user_id INT NOT NULL,
+    user_type ENUM('driver','customer') NOT NULL,
+    overall_rating TINYINT NOT NULL,
+    cleanliness_rating TINYINT DEFAULT 0,
+    safety_rating TINYINT DEFAULT 0,
+    communication_rating TINYINT DEFAULT 0,
+    punctuality_rating TINYINT DEFAULT 0,
+    comments TEXT,
+    tags JSON,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX (ride_id),
+    INDEX (user_id),
+    INDEX (user_type),
+    FOREIGN KEY (ride_id) REFERENCES rides(id)
+);
+
+🗺️ 10. Table: location_history
+CREATE TABLE location_history (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    user_type ENUM('consumer','driver') NOT NULL,
+    latitude DECIMAL(10,8) NOT NULL,
+    longitude DECIMAL(11,8) NOT NULL,
+    address TEXT,
+    speed DECIMAL(5,2) DEFAULT 0.00,
+    heading DECIMAL(5,2) DEFAULT 0.00,
+    accuracy DECIMAL(8,2) DEFAULT 0.00,
+    recorded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX (user_id),
+    INDEX (latitude),
+    INDEX (recorded_at)
+);
+
+👁️ 11. Table (View-like): consumer_rides_view
+
+(You can create this as a normal table for local testing or as a SQL view later.)
+
+CREATE TABLE consumer_rides_view (
+    id INT NOT NULL,
+    consumer_id INT NOT NULL,
+    pickup_address TEXT,
+    drop_address TEXT,
+    distance_km DECIMAL(8,2) NOT NULL,
+    fare DECIMAL(10,2) NOT NULL,
+    status ENUM('pending','accepted','in_progress','completed','cancelled') DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    completed_at TIMESTAMP NULL,
+    driver_name VARCHAR(100),
+    driver_phone VARCHAR(20),
+    scooter_model VARCHAR(50),
+    rating TINYINT,
+    feedback TEXT
+);
+
+👁️ 12. Table (View-like): driver_dashboard_view
+CREATE TABLE driver_dashboard_view (
+    id INT NOT NULL,
+    full_name VARCHAR(100) NOT NULL,
+    email VARCHAR(100) NOT NULL,
+    phone VARCHAR(20) NOT NULL,
+    scooter_model VARCHAR(50) NOT NULL,
+    is_available TINYINT(1) DEFAULT 0,
+    current_latitude DECIMAL(10,8),
+    current_longitude DECIMAL(11,8),
+    current_address TEXT,
+    location_updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    total_rides BIGINT DEFAULT 0,
+    total_earnings DECIMAL(32,2) DEFAULT 0.00,
+    average_rating DECIMAL(7,4) DEFAULT 0.0000
+);

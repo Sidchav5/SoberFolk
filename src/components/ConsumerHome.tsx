@@ -507,41 +507,11 @@ const [isLoadingHistory, setIsLoadingHistory] = useState(false);
           headers: { Authorization: `Bearer ${token}` },
         });
     
-  const data = await response.json();
-  console.log('fetchActiveRide ->', { ok: response.ok, success: data?.success, ride: data?.ride });
+        const data = await response.json();
     
         if (response.ok && data.success && data.ride) {
-          // Normalize status and handle variations in casing/field names
-          const status = (data.ride.status || data.ride.state || '').toString().toLowerCase();
-          const isCompleted = status === 'completed' || status === 'done' || status === 'finished';
-
-          if (isCompleted) {
-            console.log('fetchActiveRide: ride completed detected, navigating to feedback', data.ride?.id);
+          if (data.ride.status === 'completed') {
             await fetchRideHistory();
-            // Navigate to feedback screen immediately when ride is completed
-            const rideDetails = {
-              pickup: data.ride.pickup?.address || data.ride.pickup_address || '',
-              drop: data.ride.drop?.address || data.ride.drop_address || '',
-              fare: data.ride.fare || data.ride.total_fare || 0,
-              date: new Date(data.ride.completedAt || data.ride.completed_at || Date.now()).toLocaleDateString()
-            };
-            const driverInfo = data.ride.driver ? {
-              name: data.ride.driver.name,
-              phone: data.ride.driver.phone,
-              profilePhoto: data.ride.driver.profilePhoto
-            } : null;
-
-            // Only navigate if we're not already on the feedback screen
-            try {
-              navigation.navigate("ConsumerFeedback", {
-                rideId: data.ride.id,
-                driverInfo,
-                rideDetails
-              });
-            } catch (navErr) {
-              console.warn('Navigation to ConsumerFeedback failed:', navErr);
-            }
-
             setActiveRide(null);
             setPickupCoords(null);
             setDropCoords(null);
@@ -589,14 +559,14 @@ const [isLoadingHistory, setIsLoadingHistory] = useState(false);
                 date: new Date(latest.createdAt).toLocaleString(),
               };
     
-              Alert.alert(
-                "How was your ride?",
-                "Would you like to rate your driver?",
-                [
-                  { text: "Later", style: "cancel" },
-                  { text: "Rate Now", onPress: () => navigation.navigate("ConsumerFeedback", { rideId: latest.id, driverInfo, rideDetails }) }
-                ]
-              );
+              // Alert.alert(
+              //   "How was your ride?",
+              //   "Would you like to rate your driver?",
+              //   [
+              //     { text: "Later", style: "cancel" },
+              //     { text: "Rate Now", onPress: () => navigation.navigate("ConsumerFeedback", { rideId: latest.id, driverInfo, rideDetails }) }
+              //   ]
+              // );
             }
           }
           setActiveRide(null);
@@ -608,6 +578,7 @@ const [isLoadingHistory, setIsLoadingHistory] = useState(false);
         setIsLoadingActiveRide(false);
       }
     };
+
     // Poll active ride status every 10 seconds
 // Poll active ride status every 10 seconds
 // Poll active ride status every 10 seconds
@@ -621,16 +592,6 @@ useEffect(() => {
   }
   // Don't need the else if for 'completed' anymore - fetchActiveRide handles it
 }, [activeRide]);
-
-// Background polling: always poll active ride every 10s to catch status changes
-useEffect(() => {
-  const bgInterval = setInterval(() => {
-    fetchActiveRide();
-  }, 10000);
-
-  return () => clearInterval(bgInterval);
-}, []);
-
   // Poll for ride status
   const startRideStatusPolling = async (rideId: number) => {
     const interval = setInterval(async () => {
@@ -653,16 +614,9 @@ if (data.status === 'accepted') {
   setIsBooking(false);
   setBookingStatus('');
   
-  // Get the accepting driver's info
-  const acceptingDriver = data.currentDriver || {};
-  const driverName = acceptingDriver.name || 'Your driver';
-  const queueInfo = acceptingDriver.queuePosition > 1 
-    ? `\n(Previous ${acceptingDriver.queuePosition - 1} driver(s) were unavailable)`
-    : '';
-  
   Alert.alert(
     "Ride Accepted! 🎉",
-    `${driverName} has accepted your ride!${queueInfo}\n\nDriver is on the way to your pickup location.`,
+    `Your ride has been accepted!\n\nDriver is on the way to your pickup location.`,
     [
       {
         text: "OK",
@@ -698,19 +652,8 @@ if (data.status === 'accepted') {
   // Refresh ride history
   fetchRideHistory();
 } else if (data.currentDriver) {
-            // Show more detailed status including position in queue
-            const { name, queuePosition, totalDrivers } = data.currentDriver;
-            if (queuePosition > 1) {
-              // If we've moved to a subsequent driver, show an alert
-              Alert.alert(
-                "Previous Driver Unavailable",
-                `Moving to next available driver: ${name}`,
-                [{ text: "OK" }]
-              );
-            }
             setBookingStatus(
-              `Requesting driver ${name} (${queuePosition} of ${totalDrivers})...\n` +
-              `Previous drivers not available: ${queuePosition - 1}`
+              `Waiting for driver ${data.currentDriver.name} (${data.currentDriver.queuePosition}/${data.currentDriver.totalDrivers}) to accept...`
             );
           }
         }
@@ -810,43 +753,46 @@ if (data.status === 'accepted') {
 
 
   // Handle Android Back Button
-  useEffect(() => {
-    const backAction = () => {
-      Alert.alert(
-        "Logout",
-        "Are you sure you want to logout?",
-        [
-          {
-            text: "Cancel",
-            onPress: () => null,
-            style: "cancel"
-          },
-          {
-            text: "Logout",
-            onPress: async () => {
-              await AsyncStorage.removeItem("authToken");
-              await AsyncStorage.removeItem("currentUser");
-              await AsyncStorage.removeItem("userRole");
-              await AsyncStorage.removeItem("recentRides");
-              
-              navigation.reset({
-                index: 0,
-                routes: [{ name: "Login" }],
-              });
-            }
+  // Handle Android Back Button
+// Handle Android Back Button
+useEffect(() => {
+  const backAction = () => {
+    Alert.alert(
+      "Logout",
+      "Are you sure you want to logout?",
+      [
+        {
+          text: "Cancel",
+          onPress: () => null,
+          style: "cancel"
+        },
+        {
+          text: "Logout",
+          onPress: async () => {
+            await AsyncStorage.removeItem("authToken");
+            await AsyncStorage.removeItem("currentUser");
+            await AsyncStorage.removeItem("userRole");
+            await AsyncStorage.removeItem("recentRides");
+            await AsyncStorage.removeItem("hasSeenOnboarding"); // ADD THIS LINE
+            
+            navigation.reset({
+              index: 0,
+              routes: [{ name: "Login" }],
+            });
           }
-        ]
-      );
-      return true;
-    };
-
-    const backHandler = BackHandler.addEventListener(
-      "hardwareBackPress",
-      backAction
+        }
+      ]
     );
+    return true;
+  };
 
-    return () => backHandler.remove();
-  }, [navigation]);
+  const backHandler = BackHandler.addEventListener(
+    "hardwareBackPress",
+    backAction
+  );
+
+  return () => backHandler.remove();
+}, [navigation]);
 
   const renderContent = () => {
     switch (activeTab) {
@@ -1310,6 +1256,7 @@ if (data.status === 'accepted') {
           return (
             <View style={styles.contentBox}>
               <Text style={styles.title}>Recent Rides</Text>
+        
               {isLoadingHistory ? (
                 <View style={styles.emptyState}>
                   <ActivityIndicator size="large" color="#6E44FF" />
@@ -1339,40 +1286,84 @@ if (data.status === 'accepted') {
                     >
                       <View style={styles.rideHeader}>
                         <Text style={styles.rideDate}>
-                          {new Date(ride.createdAt).toLocaleDateString()} • {new Date(ride.createdAt).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}
+                          {new Date(ride.createdAt).toLocaleDateString()} •{" "}
+                          {new Date(ride.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </Text>
                         <View
                           style={[
                             styles.statusBadge,
-                            ride.status === "completed" ? styles.completedBadge : styles.bookedBadge,
+                            ride.status === "completed"
+                              ? styles.completedBadge
+                              : styles.bookedBadge,
                           ]}
                         >
-                          <Text style={styles.statusText}>{ride.status?.toUpperCase() || 'COMPLETED'}</Text>
+                          <Text style={styles.statusText}>
+                            {ride.status?.toUpperCase() || "COMPLETED"}
+                          </Text>
                         </View>
                       </View>
-                      
+        
                       <View style={styles.rideDetails}>
                         <View style={styles.locationRow}>
                           <LinearGradient
                             colors={['#6E44FF', '#8A6EFF']}
                             style={[styles.dot, styles.pickupDot]}
                           />
-                          <Text style={styles.locationText} numberOfLines={2}>{ride.pickup?.address || 'Unknown pickup'}</Text>
+                          <Text style={styles.locationText} numberOfLines={2}>
+                            {ride.pickup?.address || "Unknown pickup"}
+                          </Text>
                         </View>
-                        
+        
                         <View style={styles.dividerLine} />
-                        
+        
                         <View style={styles.locationRow}>
                           <LinearGradient
                             colors={['#FF6B6B', '#FF8A8A']}
                             style={[styles.dot, styles.dropDot]}
                           />
-                          <Text style={styles.locationText} numberOfLines={2}>{ride.drop?.address || 'Unknown drop'}</Text>
+                          <Text style={styles.locationText} numberOfLines={2}>
+                            {ride.drop?.address || "Unknown drop"}
+                          </Text>
                         </View>
                       </View>
-                      
+        
                       <View style={styles.rideFooter}>
                         <Text style={styles.fareText}>₹{ride.fare}</Text>
+        
+                        {ride.status === "completed" && (
+                          <TouchableOpacity
+                            style={styles.rateNowButton}
+                            onPress={() => {
+                              const driverInfo = ride.driver
+                                ? {
+                                    name: ride.driver.name,
+                                    phone: ride.driver.phone,
+                                    profilePhoto: ride.driver.profilePhoto || null,
+                                  }
+                                : null;
+        
+                              const rideDetails = {
+                                pickup: ride.pickup.address,
+                                drop: ride.drop.address,
+                                fare: ride.fare,
+                                date: new Date(ride.createdAt).toLocaleString(),
+                              };
+        
+                              navigation.navigate("ConsumerFeedback", {
+                                rideId: ride.id,
+                                driverInfo,
+                                rideDetails,
+                              });
+                            }}
+                          >
+                            <LinearGradient
+                              colors={['#FF6B6B', '#6E44FF']}
+                              style={styles.rateNowGradient}
+                            >
+                              <Text style={styles.rateNowText}>Rate Now</Text>
+                            </LinearGradient>
+                          </TouchableOpacity>
+                        )}
                       </View>
                     </LinearGradient>
                   ))}
@@ -1380,74 +1371,7 @@ if (data.status === 'accepted') {
               )}
             </View>
           );
-        return (
-          <View style={styles.contentBox}>
-            <Text style={styles.title}>Recent Rides</Text>
-            {recentRides.length === 0 ? (
-              <View style={styles.emptyState}>
-                <LinearGradient
-                  colors={['#FF6B6B', '#6E44FF']}
-                  style={styles.emptyStateIconContainer}
-                >
-                  <Image
-                    source={{ uri: "https://cdn-icons-png.flaticon.com/512/2972/2972185.png" }}
-                    style={styles.emptyStateIcon}
-                  />
-                </LinearGradient>
-                <Text style={styles.emptyStateText}>No rides yet</Text>
-                <Text style={styles.emptyStateSubText}>Book your first ride to see it here!</Text>
-              </View>
-            ) : (
-              <ScrollView showsVerticalScrollIndicator={false} style={styles.ridesScrollView}>
-                {recentRides.map((ride) => (
-                  <LinearGradient
-                    key={ride.id}
-                    colors={['#FFFFFF', '#F8FBF8']}
-                    style={styles.rideCard}
-                  >
-                    <View style={styles.rideHeader}>
-                      <Text style={styles.rideDate}>
-                        {ride.date} • {ride.time}
-                      </Text>
-                      <View
-                        style={[
-                          styles.statusBadge,
-                          ride.status === "Completed" ? styles.completedBadge : styles.bookedBadge,
-                        ]}
-                      >
-                        <Text style={styles.statusText}>{ride.status}</Text>
-                      </View>
-                    </View>
-                    
-                    <View style={styles.rideDetails}>
-                      <View style={styles.locationRow}>
-                        <LinearGradient
-                          colors={['#6E44FF', '#8A6EFF']}
-                          style={[styles.dot, styles.pickupDot]}
-                        />
-                        <Text style={styles.locationText} numberOfLines={2}>{ride.pickup}</Text>
-                      </View>
-                      
-                      <View style={styles.dividerLine} />
-                      
-                      <View style={styles.locationRow}>
-                        <LinearGradient
-                          colors={['#FF6B6B', '#FF8A8A']}
-                          style={[styles.dot, styles.dropDot]}
-                        />
-                        <Text style={styles.locationText} numberOfLines={2}>{ride.drop}</Text>
-                      </View>
-                    </View>
-                    
-                    <View style={styles.rideFooter}>
-                      <Text style={styles.fareText}>₹{ride.fare}</Text>
-                    </View>
-                  </LinearGradient>
-                ))}
-              </ScrollView>
-            )}
-          </View>
-        );
+        
 
       case "MyDetails":
         return (
@@ -2496,6 +2420,24 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     lineHeight: 20,
   },
+  rateNowButton: {
+    marginLeft: 10,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  rateNowGradient: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rateNowText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  
 });
 
 export default ConsumerHome;

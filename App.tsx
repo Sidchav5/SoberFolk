@@ -43,18 +43,15 @@ const App: React.FC = () => {
         AsyncStorage.getItem('userRole'),
         AsyncStorage.getItem('hasSeenOnboarding')
       ]);
-
+  
       if (authToken && userRole) {
         // User is logged in, navigate to appropriate screen
         setInitialRoute(userRole === 'Driver' ? 'DriverScreen' : 'ConsumerHome');
         setShowOnboarding(false);
-      } else if (hasSeenOnboarding) {
-        // User has seen onboarding but not logged in
-        setInitialRoute('Login');
-        setShowOnboarding(false);
       } else {
-        // First time user
+        // No auth token = logged out, show onboarding again
         setShowOnboarding(true);
+        setInitialRoute('Home');
       }
     } catch (error) {
       console.error('Error checking login status:', error);
@@ -67,7 +64,7 @@ const App: React.FC = () => {
   const handleOnboardingComplete = async (): Promise<void> => {
     await AsyncStorage.setItem('hasSeenOnboarding', 'true');
     setShowOnboarding(false);
-    setInitialRoute('Login');
+    setInitialRoute('Home');
   };
 
   if (isLoading) {
