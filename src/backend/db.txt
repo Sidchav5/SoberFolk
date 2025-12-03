@@ -204,5 +204,3 @@ CREATE TABLE driver_dashboard_view (
     total_earnings DECIMAL(32,2) DEFAULT 0.00,
     average_rating DECIMAL(7,4) DEFAULT 0.0000
 );
-
-
