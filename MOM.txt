@@ -1,0 +1,383 @@
+Minutes of Meeting (MoM)
+Project Title:  The SoberFolks -Designated Driver on Demand with Foldable E-Scooters
+
+1. Introduction
+This document records the Minutes of Meetings (MoM) conducted for the project “Designated Driver on Demand with Foldable E-Scooters”, which aims to design and develop an innovative application that allows users to book certified drivers on demand who arrive using portable e-scooters. The driver can safely transport the customer’s vehicle to the desired destination, ensuring a convenient, eco-friendly, and responsible transportation experience.
+The project integrates real-time location tracking, ride booking and management, AI-assisted features, and driver–customer coordination within a single mobile application developed using React Native, supported by a Node.js backend and MySQL database.
+
+2. Project Supervision and Team
+Role	Name	Details
+Project Guide / Mentor	Prof. Prathmesh Palande	Project Sponsor (Alumni of VIT )
+Team Members	Siddhesh, Rajeshwar,Shivam,Anvita and Raj	TY-A Group 2 Artificial Intelligence & Data Science 
+
+
+
+3. Project Overview
+The system enables:
+•	Customers can book a professional driver from their mobile app.
+•	Drivers accept rides, navigate to the customer’s pickup location, and complete trips using integrated Google Maps APIs.
+•	Secure authentication and payment tracking between both roles using a unified database hosted on Railway.
+
+
+
+
+
+4. Technologies & Tools Used
+Category	Technology / Tool
+Frontend / App Development	React Native
+Backend	Node.js, Express.js
+Database	MySQL (Hosted on Railway)
+Mapping APIs	Google Maps API, OpenStreetMap (alternative)
+Version Control	GitHub
+Cloud Hosting (if applicable)	Railway / Render
+	
+
+
+
+
+
+
+5. Important Project Links
+Resource	Link / Description
+GitHub Repository	https://github.com/prathmeshpalande/the-sober-folk
+
+Database Schema (SQL Dump)	mysql://root:BQUAksWCdcCleLkTTXabJUfRKvPNIKZi@crossover.proxy.rlwy.net:52505/SoberFolks
+
+
+	
+
+6. Document Purpose
+This document maintains a chronological record of all meetings conducted with the project guide.
+ It captures:
+•	Key discussion points
+•	Technical decisions
+•	Progress tracking
+•	Assigned tasks and responsibilities
+
+This ensures transparency, accountability, and a clear understanding of the project’s development timeline.
+
+Minutes of Meeting (MoM)
+Project Title: Designated Driver on Demand with Foldable E-Scooters
+ Meeting No.: 1
+ Date: 10th August 2025
+ Type: Introduction & Overview Discussion
+ Attendees: Prathmesh Palande Sir, Team Members
+
+Agenda:
+•	Introduction of team members and project guide
+•	Overview of potential project ideas
+•	Understanding expectations and project scope
+
+
+
+Discussion Points:
+•	The meeting began with introductions of all team members and the faculty guide.
+•	A brief overview of the project objectives and possible directions was discussed.
+•	The guide explained the importance of innovative and feasible project selection.
+•	Initial ideas such as AI-based assistant (PS1) and designated driver service (PS2) were introduced.
+•	Decided to explore feasibility and scope of both before finalizing one.
+
+
+
+Decisions Taken:
+•	The team will conduct basic research on both proposed ideas (AI Assistance and Driver Service).
+•	Next meeting to focus on feasibility comparison and idea refinement.
+
+Minutes of Meeting (MoM)
+Project Title: Designated Driver on Demand with Foldable E-Scooters
+ Meeting No.: 2
+ Date: 15th August 2025
+ Type: Project Concept Refinement & Review with Guide
+ Attendees: Prathmesh Palande Sir, Team Members
+________________________________________
+Agenda:
+•	Review and discussion of project document overview
+•	Redesign and refinement of initial project idea
+•	Feedback session with project guide
+
+Discussion Points:
+•	The team presented the initial Project Overview Document created after the first meeting.
+•	Sir reviewed the document and provided valuable feedback on system design clarity and feasibility.
+•	The team discussed restructuring the concept to focus on driver-owned foldable e-scooter model, improving scalability and practicality.
+•	Integration of Google Maps API and dynamic pricing was proposed to make the system more realistic.
+•	The team agreed to revise the documentation and include key modules and workflow based on the new approach.
+
+
+Decisions Taken:
+•	The project scope will now revolve around “Driver-Owned Foldable Scooter Model with Maps & Pricing Integration.”
+
+
+•	Documentation will be updated accordingly with modified objectives, flow, and technology stack.
+•	Prepare visuals (system overview & workflow diagrams) for the next session.
+
+
+
+Minutes of Meeting (MoM)
+Project Title: Designated Driver on Demand with Foldable E-Scooters
+ Meeting No.: 3
+ Date: 19th August 2025
+ Type: Technical Guidance & UI Design Discussion
+ Attendees: Prathmesh Palande Sir), Team Members
+________________________________________
+Agenda:
+•	Learning session on Kivy Framework for app development
+•	Discussion on UI/UX design approach for customer and driver modules
+•	Planning initial prototype screens
+
+Discussion Points:
+•	Sir introduced the team to the Kivy framework as a Python-based tool for building mobile applications.
+•	Explained Kivy’s cross-platform nature and its suitability for rapid prototyping of the project’s app interface.
+•	Team explored the use of Kivy widgets and layout management to create screens such as Login, Home, Booking, and Ride Status.
+•	Discussion on how Kivy could be integrated with backend APIs once developed.
+•	Sir emphasised designing clean and functional UI screens that align with the system workflow.
+
+Decisions Taken:
+•	The team will use Kivy to design initial UI prototypes for both Customer and Driver interfaces.
+•	Core screens to be designed: Login, Signup, Booking, Ride Details, and Tracking Screen.
+
+•	Kivy will be used for proof of concept (POC), while React Native or web alternatives may be evaluated later for scalability.
+
+
+Minutes of Meeting (MoM)
+Project Title: Designated Driver on Demand with Foldable E-Scooters
+ Meeting No.: 4
+ Date: 25 August 2025
+ Type: Technical Review & Technology Finalization
+ Attendees: Prathmesh Palande Sir (Guide), Team Members
+________________________________________
+Agenda:
+•	Review of Kivy-based UI design prepared by the team
+•	Discussion on suitable technology stack for full project implementation
+•	Exploration of Large Language Models (LLMs) and their role in the project
+
+Discussion Points:
+•	The team presented the Kivy UI designs developed in the previous session, including basic screens for login, booking, and tracking.
+•	Sir reviewed the designs and provided suggestions for improving the user flow and responsiveness.
+•	A detailed discussion took place on the technologies the team is familiar with, such as Python, React Native, Flask, and MySQL.
+•	After evaluating scalability and cross-platform needs, React Native was finalized as the preferred framework for app development.
+•	Sir also encouraged the team to research Large Language Models (LLMs) and explore how AI capabilities could enhance the project — possibly for tasks like automated customer support or intelligent ride assignment in the future.
+
+Decisions Taken:
+•	React Native finalized as the main frontend development framework.
+•	Backend to be developed using Flask or Node.js based on feasibility.
+•	Research on LLM integration possibilities to begin in parallel.
+
+
+
+
+
+Action Items / Next Steps:
+Action Item	Responsible	Deadline
+Research potential use cases of LLMs in the project	All Members	Next meeting
+Set up React Native development environment	 Team	Before next review
+
+
+
+Minutes of Meeting (MoM)
+Project Title: Designated Driver on Demand with Foldable E-Scooters
+ Meeting No.: 5
+ Date: 6th September 2025
+ Type: Technical Discussion – High Level Design (HLD)
+ Attendees: Prathmesh Palande Sir (Guide), Team Members
+________________________________________
+Agenda:
+•	Introduction to the concept and importance of High-Level Design (HLD)
+•	Understanding various components and layers of HLD
+•	Assigning individual tasks to prepare HLD presentations
+•	Begin design of HLD specific to our project
+
+Discussion Points:
+•	Sir conducted a detailed discussion explaining the purpose and structure of an HLD document, emphasizing how it connects system requirements with implementation.
+•	Key HLD components such as System Overview, Architecture Diagram, Modules, Data Flow, and External Services were discussed in detail.
+•	Sir guided the team to study HLD examples from real-world applications like Uber to understand architecture patterns and best practices for ride-based systems.
+•	Each team member was assigned the task to prepare an individual PPT explaining HLD components and how they can be applied to the project.
+•	The team was also asked to begin drafting the basic HLD design for their own application, including system modules and architecture layout.
+
+
+Decisions Taken:
+•	The team will design and document a basic HLD structure for the Designated Driver App inspired by similar real-world systems.
+•	Each member will prepare a presentation covering theoretical and practical aspects of HLD components.
+•	The HLD PPT and document will be reviewed in the next meeting for feedback.
+
+
+Action Items / Next Steps:
+Action Item	Responsible	Deadline
+Study HLD concepts and structure	All Members	Before next session
+Prepare individual PPT on HLD components	Each Member	Before review meeting
+Design draft HLD document for the project	Siddhesh & Team	Next meeting
+
+
+
+Minutes of Meeting (MoM)
+Project Title: Designated Driver on Demand with Foldable E-Scooters
+ Meeting No.: 6
+ Date: 19th September
+ Type: Review & Design Discussion
+ Attendees: Prathmesh Palande Sir (Guide), Team Members
+________________________________________
+Agenda:
+•	Review of submitted High-Level Design (HLD) Report
+•	Discussion on project workflow and improvements suggested by Sir
+•	Assignment of next task: UI/UX Design Development
+
+Discussion Points:
+•	The team presented the High-Level Design (HLD) report including the system architecture, data model, and component explanations.
+
+
+•	Prathmesh Sir reviewed the report in detail and suggested a few modifications in the architecture structure, data flow clarity, and module definitions.
+•	Sir emphasised improving the project workflow visualization, ensuring that every module, Customer, Driver, and Pricing, is well connected in the diagram.
+•	The next step was defined as designing the User Interface (UI) screens for the mobile application.
+•	Sir asked the team to create basic app screens such as Signup, Login, and Onboarding using the finalised design technology (React Native).
+•	The importance of user experience (UX) and smooth navigation between screens was highlighted for better system usability.
+
+Decisions Taken:
+•	Update and refine the HLD report with corrections and add a detailed project flow diagram.
+•	Begin UI design development for the mobile app including authentication and onboarding screens.
+•	Use a consistent design theme aligned with the project’s brand and functionality.
+
+
+Action Items / Next Steps:
+Action Item	Responsible	Deadline
+Update HLD report as per Sir’s feedback	Siddhesh & Team	Next meeting
+Add detailed project flow to documentation	Siddhesh	Next meeting
+Design basic UI screens (Login, Signup, Onboarding)	Design Team	Before next session
+Prepare for next review with updated HLD + UI mockups	All Members	Next review meeting
+
+
+
+
+
+
+
+Minutes of Meeting (MoM)
+Project Title: Designated Driver on Demand with Foldable E-Scooters
+ Meeting No.: 7
+ Date: 5th October 2025
+ Type: Progress Review & Technical Assistance Discussion
+ Attendees: Prathmesh Palande Sir (Guide), Team Members
+________________________________________
+Agenda
+•	Presentation of previously completed work (HLD updates & initial UI designs)
+•	Discussion on integration of AI components or APIs for the project
+•	Request for OpenAI API access for development and experimentation
+
+Discussion Points
+•	The team presented the updated HLD report, revised architecture, and UI design screens developed after the previous meeting.
+•	Sir reviewed the progress and appreciated the structural improvements made in the documentation and app interface.
+•	The team proposed integrating OpenAI API to explore automation and smart assistant features that could enhance user experience — such as AI-based trip estimation, automated query handling, or voice-enabled features.
+•	Sir guided the team on obtaining an API key and understanding its limitations and responsible usage.
+•	Additional discussion took place on how AI capabilities could be used to add intelligent layers to the project’s backend in future versions.
+
+
+Decisions Taken
+•	The team will proceed to explore OpenAI APIs and document potential use cases relevant to the project.
+•	Any integration or testing using these APIs will be done in a controlled environment.
+•	Continue refining existing modules while preparing the system for possible AI-based enhancements later.
+
+
+
+Action Items / Next Steps
+Action Item	Responsible	Deadline
+Request and set up OpenAI API key	Team Lead	Before next meeting
+Research possible AI integrations (chatbot, ride prediction, etc.)	All Members	Ongoing
+Continue refining UI & backend alignment	Development Team	Next review meeting
+Prepare a short proposal for AI use cases	Siddhesh & Team	Next session
+
+
+
+
+Meeting No.: 8
+Date: 9th October 2025
+ Type: Backend Setup & Database Configuration
+ Attendees: Prathmesh Palande Sir (Guide), Team Members
+Agenda
+•	Setup and hosting of SQL database.
+•	Develop initial backend for user authentication.
+
+
+Discussion Points
+•	The team successfully created and hosted the project database on Railway, ensuring remote accessibility for all team members.
+•	A basic backend was developed using Node.js to handle user signup and login functionalities.
+•	Discussion focused on how to structure database tables for customers and drivers.
+•	Sir emphasised the importance of maintaining data integrity and ensuring secure connections between the backend and hosted database.
+
+
+Decisions Taken
+•	Continue expanding the backend APIs for other functionalities such as booking and ride management.
+•	Ensure proper validation and authentication mechanisms.
+
+
+Action Items / Next Steps
+Action Item	Responsible	Deadline
+Complete signup-login integration testing	Development Team	Before next meeting
+Document database schema and connections	Siddhesh & Team	Ongoing
+Start planning APIs for booking and ride flow	Backend Team	Next session
+
+
+
+
+
+
+Meeting No.: 9
+Date: 11th October 2025
+ Type: UI Enhancement & Role-Based Profile Review
+ Attendees: Prathmesh Palande Sir (Guide), Team Members
+Agenda
+•	Present updated UI for profile sections.
+•	Implement and verify role-based screens for customers and drivers.
+
+
+Discussion Points
+•	The team presented the Profile section and its role-based UI behavior for Driver and Customer logins.
+•	Sir reviewed the design and functionality, providing feedback on user details display and layout consistency.
+
+
+•	Discussed data retrieval flow from the backend to populate the UI dynamically.
+•	Improvements were suggested for making the UI more responsive and adding edit/update functionality.
+
+
+Decisions Taken
+•	Refine the profile UI and ensure data linkage from backend APIs.
+•	Prepare to integrate Google Maps API in the next phase for pickup/drop location selection.
+
+
+Action Items / Next Steps
+Action Item	Responsible	Deadline
+Improve Profile UI (Driver/Customer)	UI Team	Before next meeting
+Implement real-time data fetch for profile	Backend Team	Ongoing
+Research Google Maps API integration	Siddhesh & Team	Next session
+
+Meeting No.: 10
+Date: 14th October 2025
+ Type: Feature Implementation & Proof of Concept Review
+ Attendees: Prathmesh Palande Sir (Guide), Team Members
+Agenda
+•	Present Proof of Concept (POC) for booking and ride acceptance.
+•	Discuss next feature: pickup/drop integration using Google Maps.
+
+
+Discussion Points
+•	The team demonstrated a working POC that successfully handled ride booking and acceptance flow between customer and driver.
+•	Sir appreciated the functional progress and gave feedback to enhance UI interaction and data flow efficiency.
+
+
+•	Next task assigned: design pickup and drop location UI with Google Maps API for live location selection and tracking.
+•	Discussed handling of API limits and real-time updates between driver and customer screens.
+
+
+Decisions Taken
+•	Proceed with integrating Google Maps API into the app’s booking flow.
+•	Optimise backend requests for faster response during location fetch.
+
+
+Action Items / Next Steps
+Action Item	Responsible	Deadline
+Design UI for pickup/drop with Google Maps	UI Team	Next review
+Integrate Maps API with backend for coordinates	Backend Team	Ongoing
+Test booking flow end-to-end with real-time updates	QA Team	Before next meeting
+
+
+Some Photographs from the Meeting
+ 
+ 
+ 
