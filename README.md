@@ -1,105 +1,253 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# SoberFolk 🚗
 
-# Getting Started
+**Designated Driver on Demand with Foldable E-Scooters**
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+SoberFolk is an innovative mobile application that provides on-demand certified drivers who arrive using portable e-scooters. The driver safely transports your vehicle to your desired destination, offering a convenient, eco-friendly, and responsible transportation solution.
 
-## Step 1: Start Metro 
+## 📋 Table of Contents
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+- [About](#about)
+- [Features](#features)
+- [Technology Stack](#technology-stack)
+- [Project Structure](#project-structure)
+- [Prerequisites](#prerequisites)
+- [Installation](#installation)
+- [Running the Application](#running-the-application)
+- [Backend Setup](#backend-setup)
+- [Team](#team)
+- [License](#license)
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+## 🎯 About
 
-```sh
-# Using npm
+SoberFolk addresses the need for safe and responsible transportation by connecting users with professional drivers who can drive their vehicles home. Drivers use foldable electric scooters to reach customers quickly, making the service both efficient and environmentally friendly.
+
+### Key Highlights
+
+- 🚴 **Eco-Friendly**: Drivers use foldable e-scooters for pickup
+- 🗺️ **Real-Time Tracking**: Integrated Google Maps for navigation
+- 💳 **Secure Payments**: Safe cashless transactions
+- 🔒 **Certified Drivers**: Professional and verified drivers
+- ⚡ **Dynamic Pricing**: Fair pricing based on distance, time, and traffic
+
+## ✨ Features
+
+### For Customers
+- Book professional drivers on-demand
+- Real-time driver tracking
+- Secure authentication and payments
+- Ride history and feedback system
+- Multiple payment options
+
+### For Drivers
+- Accept ride requests in real-time
+- Efficient navigation with traffic-aware routes
+- Flexible working hours
+- Earnings tracking
+- Customer feedback system
+
+## 🛠 Technology Stack
+
+### Mobile Application
+- **React Native** - Cross-platform mobile development
+- **TypeScript** - Type-safe JavaScript
+- **React Navigation** - Navigation library for routing
+- **React Native Maps** - Map integration
+- **AsyncStorage** - Local data persistence
+
+### Backend
+- **Node.js** - Runtime environment
+- **Express.js** - Web framework
+- **MySQL** - Database (hosted on Railway)
+- **JWT** - Authentication
+- **bcryptjs** - Password hashing
+
+### APIs & Services
+- **Google Maps API** - Location and navigation services
+- **Geohashing** - Efficient location-based driver matching
+
+## 📁 Project Structure
+
+```
+SoberFolk/
+├── android/                 # Android native code
+├── ios/                     # iOS native code
+├── src/
+│   ├── assets/             # Images and static files
+│   ├── backend/            # Backend server code
+│   │   ├── server.js       # Express server
+│   │   ├── db.js           # Database connection
+│   │   └── .env            # Environment variables
+│   └── components/         # React Native components
+│       ├── OnboardingScreen.tsx
+│       ├── HeroSection.tsx
+│       ├── LoginScreen.tsx
+│       ├── SignupScreen.tsx
+│       ├── DriverScreen.tsx
+│       ├── ConsumerHome.tsx
+│       └── ...
+├── __tests__/              # Test files
+├── App.tsx                 # Main application component
+├── package.json            # Dependencies
+└── tsconfig.json          # TypeScript configuration
+```
+
+## 📋 Prerequisites
+
+Before you begin, ensure you have the following installed:
+
+- **Node.js** (>= 18)
+- **npm** or **yarn**
+- **React Native CLI**
+- **Android Studio** (for Android development)
+- **Xcode** (for iOS development - macOS only)
+- **CocoaPods** (for iOS dependencies)
+- **MySQL** (or access to Railway database)
+
+> **Note**: Make sure you have completed the [React Native Environment Setup](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+
+## 🚀 Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/Sidchav5/SoberFolk.git
+   cd SoberFolk
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **iOS specific setup** (macOS only)
+   
+   Install Ruby bundler (first time only):
+   ```bash
+   bundle install
+   ```
+   
+   Install CocoaPods dependencies:
+   ```bash
+   cd ios
+   bundle exec pod install
+   cd ..
+   ```
+
+## 📱 Running the Application
+
+### Start Metro Bundler
+
+First, start the Metro bundler:
+
+```bash
 npm start
-
-# OR using Yarn
-yarn start
 ```
 
-## Step 2: Build and run your app
+### Run on Android
 
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
+In a new terminal:
 
-### Android
-
-```sh
-# Using npm
+```bash
 npm run android
-
-# OR using Yarn
-yarn android
 ```
 
-### iOS
+Or build and run from Android Studio.
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
+### Run on iOS
 
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
+In a new terminal (macOS only):
 
-```sh
-bundle install
-```
-
-Then, and every time you update your native dependencies, run:
-
-```sh
-bundle exec pod install
-```
-
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
-
-```sh
-# Using npm
+```bash
 npm run ios
-
-# OR using Yarn
-yarn ios
 ```
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+Or build and run from Xcode.
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+> **Tip**: If everything is set up correctly, you should see the app running in your emulator/simulator or on your connected device.
 
-## Step 3: Modify your app
+## 🔧 Backend Setup
 
-Now that you have successfully run the app, let's make changes!
+1. **Navigate to backend directory**
+   ```bash
+   cd src/backend
+   ```
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
+2. **Configure environment variables**
+   
+   Create or update `.env` file with your configuration:
+   ```env
+   JWT_SECRET=your_jwt_secret_key
+   DB_HOST=your_database_host
+   DB_USER=your_database_user
+   DB_PASSWORD=your_database_password
+   DB_NAME=SoberFolks
+   ```
 
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
+3. **Start the backend server**
+   ```bash
+   node server.js
+   ```
 
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
+   The server will run on `http://localhost:5000`
 
-## Congratulations! :tada:
+4. **Database Setup**
+   
+   The application uses MySQL hosted on Railway. Refer to `src/backend/db.txt` for database schema and configuration details.
 
-You've successfully run and modified your React Native App. :partying_face:
+## 🧪 Testing
 
-### Now what?
+Run the test suite:
 
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
+```bash
+npm test
+```
 
-# Troubleshooting
+Run linting:
 
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
+```bash
+npm run lint
+```
 
-# Learn More
+## 🔄 Development Workflow
 
-To learn more about React Native, take a look at the following resources:
+1. Make changes to your code
+2. Save the file - the app will automatically reload (Fast Refresh)
+3. For a full reload:
+   - **Android**: Press <kbd>R</kbd> twice or <kbd>Ctrl</kbd>+<kbd>M</kbd> (Windows/Linux) / <kbd>Cmd</kbd>+<kbd>M</kbd> (macOS) → "Reload"
+   - **iOS**: Press <kbd>R</kbd> in the simulator
 
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+## 👥 Team
 
+**TY-A Group 2 - Artificial Intelligence & Data Science**
 
-Modules to be installed=={
-npm install react react-native
-npm install @react-navigation/native @react-navigation/native-stack
-npm install react-native-screens react-native-safe-area-context
-npm install --save-dev typescript @types/react @types/react-native
-}
+- Siddhesh Chavhan
+- Rajeshwar
+- Shivam
+- Anvita
+- Raj
+
+**Project Guide**: Prof. Prathmesh Palande (VIT Alumni)
+
+## 📄 License
+
+This project is part of an academic program at VIT.
+
+## 🤝 Contributing
+
+This is an academic project. For any questions or suggestions, please contact the team members.
+
+## 📞 Support
+
+For issues and questions:
+- Check the [React Native Troubleshooting Guide](https://reactnative.dev/docs/troubleshooting)
+- Review project documentation in `MOM.txt`
+- Contact the development team
+
+## 🔗 Important Links
+
+- **GitHub Repository**: [Sidchav5/SoberFolk](https://github.com/Sidchav5/SoberFolk)
+- **React Native Documentation**: [reactnative.dev](https://reactnative.dev)
+- **Project Guide Repository**: [prathmeshpalande/the-sober-folk](https://github.com/prathmeshpalande/the-sober-folk)
+
+---
+
+Made with ❤️ by Team SoberFolk
