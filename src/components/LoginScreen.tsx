@@ -16,15 +16,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 
-// Configuration
-// Try multiple IPs for local network flexibility
-const API_URLS = [
-  "http://192.168.1.2:5000",    // New IP
-  "http://10.139.99.126:5000",  // Original IP
-  "http://10.219.191.57:5000",
-];
-
-const API_BASE_URL = "https://soberfolks-backend-production.up.railway.app"; // For local development
+const API_BASE_URL = "http://10.69.189.57:5000"; // Change to your local IP
 
 const { width, height } = Dimensions.get('window');
 

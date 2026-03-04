@@ -1,8 +1,9 @@
 // App.tsx
 import React, { useState, useEffect } from 'react';
-import { SafeAreaView, ScrollView, StyleSheet, StatusBar, Platform } from 'react-native';
+import { SafeAreaView, ScrollView, StyleSheet, StatusBar, Platform, ActivityIndicator, View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import OnboardingScreen from './src/components/OnboardingScreen';
 import HeroSection from './src/components/HeroSection';
 import Benefits from './src/components/Benefits';
@@ -27,15 +28,62 @@ type RootStackParamList = {
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 const App: React.FC = () => {
-  const [showOnboarding, setShowOnboarding] = useState<boolean>(true);
+  const [showOnboarding, setShowOnboarding] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [initialRoute, setInitialRoute] = useState<string>('Home');
 
   useEffect(() => {
-    setShowOnboarding(true); // For demo purposes, always show onboarding on app start
+    checkAuthStatus();
   }, []);
 
-  const handleOnboardingComplete = (): void => {
+  const checkAuthStatus = async () => {
+    try {
+      // Check if user has seen onboarding before
+      const hasSeenOnboarding = await AsyncStorage.getItem('hasSeenOnboarding');
+      
+      // Check for authentication token
+      const authToken = await AsyncStorage.getItem('authToken');
+      const userRole = await AsyncStorage.getItem('userRole');
+
+      if (!hasSeenOnboarding) {
+        // First time user - show onboarding
+        setShowOnboarding(true);
+        setIsLoading(false);
+        return;
+      }
+
+      if (authToken && userRole) {
+        // User is logged in - navigate to appropriate dashboard
+        console.log('✅ Found existing auth token, auto-logging in as:', userRole);
+        setInitialRoute(userRole === 'Consumer' ? 'ConsumerHome' : 'DriverScreen');
+      } else {
+        // User has seen onboarding but not logged in
+        setInitialRoute('Home');
+      }
+
+      setShowOnboarding(false);
+      setIsLoading(false);
+    } catch (error) {
+      console.error('Error checking auth status:', error);
+      setShowOnboarding(false);
+      setIsLoading(false);
+    }
+  };
+
+  const handleOnboardingComplete = async (): Promise<void> => {
+    // Mark onboarding as seen
+    await AsyncStorage.setItem('hasSeenOnboarding', 'true');
     setShowOnboarding(false);
   };
+
+  // Show loading screen while checking auth status
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#6E44FF" />
+      </View>
+    );
+  }
 
   if (showOnboarding) {
     return (
@@ -53,7 +101,7 @@ const App: React.FC = () => {
   return (
     <NavigationContainer>
       <Stack.Navigator
-        initialRouteName="Home"
+        initialRouteName={initialRoute as keyof RootStackParamList}
         screenOptions={{ headerShown: false }}
       >
         <Stack.Screen name="Home">
@@ -91,6 +139,12 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f8faff',
   },
 });
 

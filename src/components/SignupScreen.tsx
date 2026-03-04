@@ -17,15 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { launchImageLibrary, ImagePickerResponse } from 'react-native-image-picker';
 
-// Configuration
-// Try multiple IPs for local network flexibility
-const API_URLS = [
-  "http://192.168.56.1:5000",    // New IP
-  "http://10.139.99.126:5000",  // Original IP
-  "http://10.219.191.57:5000",
-];
-
-const API_BASE_URL = "https://soberfolks-backend-production.up.railway.app"; // For local development
+const API_BASE_URL = "http://10.69.189.57:5000";
 const { width, height } = Dimensions.get('window');
 
 const SignupScreen: React.FC = () => {

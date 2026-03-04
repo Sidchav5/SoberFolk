@@ -1,31 +1,41 @@
-// db.js — hard-coded to Railway public TCP proxy (yamanote.proxy.rlwy.net:31895)
+// // db.js — PostgreSQL Database Connection Pool
 
-const mysql = require('mysql2');
+const { Pool } = require('pg');
+require('dotenv').config();
 
-const connection = mysql.createPool({
-  host: 'yamanote.proxy.rlwy.net',      // public proxy domain from Railway Networking
-  port: 31895,                          // proxy port mapped to MySQL 3306
-  user: 'root',                         // as shown in your Railway vars
-  password: 'qFfhaWJmjTBecBEhligfhUcfEMdYZhQl', // root password from your Railway vars
-  database: 'SoberFolks',
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-  connectTimeout: 10000,
-  acquireTimeout: 10000,
+// Create PostgreSQL connection pool
+const pool = new Pool({
+  host: process.env.DB_HOST || 'localhost',
+  port: parseInt(process.env.DB_PORT) || 5432,
+  user: process.env.DB_USER || 'postgres',
+  password: process.env.DB_PASSWORD|| 'root',
+  database: process.env.DB_NAME || 'soberfolks',
+  max: 20,                    // Maximum number of clients in the pool
+  // idleTimeoutMillis: 100000,   // Close idle clients after 30 seconds
+  // connectionTimeoutMillis: 10000, // Connection timeout
 });
 
+
 // Test connection once at startup
-connection.query('SELECT 1', (err, results) => {
+pool.query('SELECT NOW()', (err, result) => {
   if (err) {
-    console.error('❌ DB connection failed:', err);
+    console.error('❌ PostgreSQL connection failed:', err.message);
+    console.error('📋 Connection details:', {
+      host: process.env.DB_HOST,
+      port: process.env.DB_PORT,
+      user: process.env.DB_USER,
+      database: process.env.DB_NAME
+    });
   } else {
-    console.log('✅ Database connected successfully');
+    console.log('✅ PostgreSQL Database connected successfully');
+    console.log('🕐 Server time:', result.rows[0].now);
   }
 });
 
-connection.on('error', (err) => {
-  console.error('MySQL pool error:', err);
+// Handle pool errors
+pool.on('error', (err) => {
+  console.error('❌ Unexpected PostgreSQL pool error:', err);
 });
 
-module.exports = connection;
+// Export the pool for querying
+module.exports = pool;
