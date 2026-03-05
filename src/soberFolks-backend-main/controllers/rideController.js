@@ -1,8 +1,10 @@
 // rideController.js - All ride operations and profile management
 
 const db = require("../db");
-const { pendingRideRequests, RIDE_REQUEST_TIMEOUT } = require("../config/config");
-const { calculateDistance, calculateFare, generateGeohash, getNeighboringGeohashes } = require("../utils/helpers");
+const { RIDE_REQUEST_TIMEOUT } = require("../config/constants");
+const { pendingRideRequests } = require("../utils/rideState");
+const { calculateDistance, calculateFare } = require("../utils/distance");
+const { generateGeohash, getNeighboringGeohashes } = require("../utils/geohash");
 
 // Find nearby available drivers using geohash
 const findDrivers = async (req, res) => {

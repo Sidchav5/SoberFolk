@@ -247,10 +247,10 @@ const fetchRideHistory = async () => {
         return;
       }
 
-      const response = await fetch(`${API_BASE_URL}/api/driver/profile`, {
+const response = await fetch(`${API_BASE_URL}/api/rides/driver/profile`, {
         method: "GET",
         headers: { Authorization: `Bearer ${token}` },
-      });
+      });      
 
       const data = await response.json();
 
@@ -290,7 +290,7 @@ const fetchRideHistory = async () => {
   const fetchPendingRides = async () => {
     try {
       const token = await AsyncStorage.getItem("authToken");
-      const response = await fetch(`${API_BASE_URL}/api/driver/pending-rides`, {
+      const response = await fetch(`${API_BASE_URL}/api/rides/driver/pending-rides`, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -648,7 +648,7 @@ useEffect(() => {
     try {
       const token = await AsyncStorage.getItem("authToken");
       const response = await fetch(
-        `${API_BASE_URL}/driver/${driver.id}/availability`,
+        `${API_BASE_URL}/profile/${driver.id}/availability`,
         {
           method: "PUT",
           headers: {

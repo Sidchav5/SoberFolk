@@ -1,7 +1,7 @@
 // auth.js - JWT Authentication Middleware
 
 const jwt = require("jsonwebtoken");
-const { JWT_SECRET } = require("../config/config");
+const { JWT_SECRET } = require("../config/constants");
 
 // JWT Authentication Middleware
 const authenticateToken = (req, res, next) => {

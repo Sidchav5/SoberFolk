@@ -1,14 +1,13 @@
-// helpers.js - All utility and helper functions
+// helpers.js - General utility functions
 
-const axios = require('axios');
-const ngeohash = require('ngeohash');
-const db = require('../db');
-const { GOOGLE_MAPS_API_KEY, GEOHASH_PRECISION, GEOHASH_NEIGHBORS_PRECISION } = require('../config/config');
-
-// -------- Date Utilities --------
+// Convert date from DD/MM/YYYY to YYYY-MM-DD format
 const convertDateFormat = (ddmmyyyy) => {
   const [day, month, year] = ddmmyyyy.split("/");
   return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+};
+
+module.exports = {
+  convertDateFormat
 };
 
 // -------- Distance and Fare Calculations --------

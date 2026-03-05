@@ -1,8 +1,8 @@
 // mapsController.js - Google Maps API integrations
 
 const axios = require("axios");
-const { GOOGLE_MAPS_API_KEY } = require("../config/config");
-const { geocodeAddress, reverseGeocode, decodePolyline } = require("../utils/helpers");
+const { GOOGLE_MAPS_API_KEY } = require("../config/constants");
+const { geocodeAddress, reverseGeocode, decodePolyline } = require("../utils/geocoding");
 
 // Geocode address to coordinates
 const geocode = async (req, res) => {

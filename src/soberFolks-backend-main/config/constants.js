@@ -11,18 +11,28 @@ const GOOGLE_MAPS_API_KEY = "AIzaSyDXZWx0j9N1BdFzQ0lP3bVF8SQJlP0xUhQ";
 
 // Booking System Configuration
 const RIDE_REQUEST_TIMEOUT = 120000; // 2 minutes per driver
-const pendingRideRequests = new Map(); // Store active ride requests
 
 // Geohash Configuration
 const GEOHASH_PRECISION = 6; // ~1.2km accuracy
 const GEOHASH_NEIGHBORS_PRECISION = 5; // ~4.9km accuracy for expanding search
+
+// Fare Configuration
+const BASE_FARE = 50; // Base fare in currency units
+const PER_KM_RATE = 10; // Per kilometer rate
+
+// Search Configuration
+const MAX_SEARCH_RADIUS_KM = 10; // Maximum search radius for drivers
+const MAX_DRIVERS_TO_RETURN = 3; // Maximum number of drivers to return
 
 module.exports = {
   PORT,
   JWT_SECRET,
   GOOGLE_MAPS_API_KEY,
   RIDE_REQUEST_TIMEOUT,
-  pendingRideRequests,
   GEOHASH_PRECISION,
   GEOHASH_NEIGHBORS_PRECISION,
+  BASE_FARE,
+  PER_KM_RATE,
+  MAX_SEARCH_RADIUS_KM,
+  MAX_DRIVERS_TO_RETURN
 };

@@ -12,13 +12,12 @@ const { pendingRideRequests } = require("./utils/rideState");
 const { errorHandler, notFoundHandler } = require("./middleware/errorHandler");
 
 // Import routes
-const authRoutes = require("./routes/auth.routes");
-const locationRoutes = require("./routes/location.routes");
-const ridesRoutes = require("./routes/rides.routes");
-const driverRoutes = require("./routes/driver.routes");
-const profileRoutes = require("./routes/profile.routes");
-const feedbackRoutes = require("./routes/feedback.routes");
-const mapsRoutes = require("./routes/maps.routes");
+const authRoutes = require("./routes/authRoutes");
+const locationRoutes = require("./routes/locationRoutes");
+const ridesRoutes = require("./routes/rideRoutes");
+const profileRoutes = require("./routes/profileRoutes");
+const feedbackRoutes = require("./routes/feedbackRoutes");
+const mapsRoutes = require("./routes/mapsRoutes");
 
 const app = express();
 
@@ -30,8 +29,7 @@ app.use(express.urlencoded({ extended: true }));
 // -------- API Routes --------
 app.use("/", authRoutes);                     // /signup, /login
 app.use("/api/location", locationRoutes);     // /api/location/update, /api/location/current
-app.use("/api/rides", ridesRoutes);           // /api/rides/*
-app.use("/api/driver", driverRoutes);         // /api/driver/pending-rides
+app.use("/api/rides", ridesRoutes);           // /api/rides/* and /api/driver/pending-rides  
 app.use("/profile", profileRoutes);           // /profile/:role/:id, /driver/:id/availability
 app.use("/api/feedback", feedbackRoutes);     // /api/feedback/*
 app.use("/api", mapsRoutes);                  // /api/geocode, /api/directions, /api/places/*
@@ -74,8 +72,8 @@ app.listen(PORT, "0.0.0.0", () => {
   console.log(`\n🏗️  Architecture: Modular (routes → controllers → utils)`);
   console.log(`\n📂 Structure:`);
   console.log(`   ├── config/       (constants, database)`);
-  console.log(`   ├── middleware/   (auth, error handling)`);
-  console.log(`   ├── utils/        (helpers, distance, geohash, geocoding)`);
-  console.log(`   ├── controllers/  (auth, location, rides, profile, feedback, maps)`);
-  console.log(`   └── routes/       (auth, location, rides, driver, profile, feedback, maps)\n`);
+  console.log(`   ├── middleware/   (auth, errorHandler)`);
+  console.log(`   ├── utils/        (helpers, distance, geohash, geocoding, rideState)`);
+  console.log(`   ├── controllers/  (authController, locationController, rideController, feedbackController, mapsController)`);
+  console.log(`   └── routes/       (authRoutes, locationRoutes, rideRoutes, profileRoutes, feedbackRoutes, mapsRoutes)\n`);
 });

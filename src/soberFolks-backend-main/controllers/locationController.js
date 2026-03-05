@@ -1,7 +1,8 @@
 // locationController.js - Location tracking and updates
 
 const db = require("../db");
-const { updateLocationWithGeohash, reverseGeocode, generateGeohash } = require("../utils/helpers");
+const { updateLocationWithGeohash, generateGeohash } = require("../utils/geohash");
+const { reverseGeocode } = require("../utils/geocoding");
 
 // Update User Location (Consumer or Driver)
 const updateLocation = async (req, res) => {
@@ -22,11 +23,11 @@ const updateLocation = async (req, res) => {
   if (!locationAddress) {
     try {
       const reverseGeoResult = await reverseGeocode(latitude, longitude);
-      locationAddress = reverseGeoResult.formatted_address;
+      locationAddress = reverseGeoResult.formatted_address || reverseGeoResult;
       console.log(`📍 Auto-resolved address: ${locationAddress}`);
     } catch (error) {
-      console.warn('Failed to reverse geocode, using coordinates as address');
-      locationAddress = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+      console.warn('Failed to reverse geocode:', error.message);
+      locationAddress = `Location (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`;
     }
   }
 

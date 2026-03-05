@@ -3,7 +3,7 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const db = require("../db");
-const { JWT_SECRET } = require("../config/config");
+const { JWT_SECRET } = require("../config/constants");
 const { convertDateFormat } = require("../utils/helpers");
 
 // Signup Controller
