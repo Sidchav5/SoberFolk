@@ -28,6 +28,22 @@ import Icon from '@react-native-vector-icons/material-icons';
 import OTPDisplay from './OTPDisplay';
 import OTPInput from './OTPInput';
 import { disconnectRealtimeSocket, getRealtimeSocket } from "../services/realtime";
+import {
+  getWallet,
+  getWalletSummary,
+  getTransactions,
+  createWithdrawalRequest,
+  getWithdrawals,
+  cancelWithdrawal,
+  formatCurrency,
+  getTransactionTypeLabel,
+  getTransactionTypeColor,
+  getWithdrawalStatusColor,
+  WalletDetails,
+  WalletTransaction,
+  WalletSummary,
+  WithdrawalRequest,
+} from "../services/wallet";
 
 const { width, height } = Dimensions.get('window');
 const API_BASE_URL = "https://soberfolks-backend.onrender.com";
@@ -71,6 +87,18 @@ const DriverScreen: React.FC = () => {
   const [mapRegion, setMapRegion] = useState(DEFAULT_REGION);
   const [isRouteFetching, setIsRouteFetching] = useState(false);
 
+  // Wallet states
+  const [wallet, setWallet] = useState<WalletDetails | null>(null);
+  const [walletSummary, setWalletSummary] = useState<WalletSummary | null>(null);
+  const [walletTransactions, setWalletTransactions] = useState<WalletTransaction[]>([]);
+  const [withdrawals, setWithdrawals] = useState<WithdrawalRequest[]>([]);
+  const [walletLoading, setWalletLoading] = useState(false);
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+  const [withdrawAmount, setWithdrawAmount] = useState('');
+  const [withdrawUpiId, setWithdrawUpiId] = useState('');
+  const [withdrawLoading, setWithdrawLoading] = useState(false);
+  const [withdrawError, setWithdrawError] = useState('');
+
   const pendingRidePollingRef = useRef<any>(null);
   const activeRidePollingRef = useRef<any>(null);
   const locationWatchIdRef = useRef<number | null>(null);
@@ -82,6 +110,77 @@ const DriverScreen: React.FC = () => {
   const realtimeSocketRef = useRef<any>(null);
   const joinedRideRoomRef = useRef<number | null>(null);
   const activeRideRef = useRef<any>(null);
+
+  // Fetch wallet data when tab is active
+  useEffect(() => {
+    if (activeTab === 'wallet') {
+      fetchWalletData();
+    }
+  }, [activeTab]);
+
+  const fetchWalletData = async (isRefresh = false) => {
+    if (isRefresh) {
+      setRefreshing(true);
+    } else {
+      setWalletLoading(true);
+    }
+    try {
+      const [summaryRes, transactionsRes, withdrawalsRes] = await Promise.all([
+        getWalletSummary(),
+        getTransactions(),
+        getWithdrawals(),
+      ]);
+
+      if (summaryRes.success && summaryRes.summary) {
+        setWalletSummary(summaryRes.summary);
+      }
+      if (transactionsRes.success && transactionsRes.transactions) {
+        setWalletTransactions(transactionsRes.transactions);
+      }
+      if (withdrawalsRes.success && withdrawalsRes.withdrawals) {
+        setWithdrawals(withdrawalsRes.withdrawals);
+      }
+    } catch (error) {
+      console.error("Failed to fetch wallet data", error);
+      Alert.alert("Error", "Could not load wallet details. Please try again.");
+    } finally {
+      setWalletLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  const handleWithdraw = async () => {
+    const amountNum = parseFloat(withdrawAmount);
+    if (isNaN(amountNum) || amountNum <= 0) {
+      setWithdrawError("Please enter a valid amount.");
+      return;
+    }
+    if (!withdrawUpiId) {
+      setWithdrawError("Please enter your UPI ID.");
+      return;
+    }
+
+    setWithdrawLoading(true);
+    setWithdrawError('');
+
+    try {
+      const result = await createWithdrawalRequest(amountNum, { upiId: withdrawUpiId });
+      if (result.success) {
+        Alert.alert("Success", result.message || "Withdrawal request submitted successfully.");
+        setShowWithdrawModal(false);
+        setWithdrawAmount('');
+        setWithdrawUpiId('');
+        fetchWalletData(); // Refresh wallet data
+      } else {
+        setWithdrawError(result.error || "Failed to submit request.");
+      }
+    } catch (error: any) {
+      setWithdrawError(error.message || "An unexpected error occurred.");
+    } finally {
+      setWithdrawLoading(false);
+    }
+  };
+
   const driverIdRef = useRef<number | null>(null);
   const appStateRef = useRef(AppState.currentState);
   const chatListRef = useRef<any>(null);
@@ -1921,14 +2020,22 @@ const DriverScreen: React.FC = () => {
           <Icon name="gps-fixed" size={24} color={activeTab === "status" ? "#667eea" : "#64748b"} />
           <Text style={[styles.tabLabel, activeTab === "status" && styles.activeTabLabel]}>Status</Text>
         </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={() => setActiveTab("wallet")}
+          style={[styles.tab, activeTab === "wallet" && styles.activeTab]}
+        >
+          <Icon name="account-balance-wallet" size={24} color={activeTab === "wallet" ? "#667eea" : "#64748b"} />
+          <Text style={[styles.tabLabel, activeTab === "wallet" && styles.activeTabLabel]}>Wallet</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Content */}
-      <Animated.View style={[styles.content, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-        {activeTab === "profile" && renderProfileTab()}
-        {activeTab === "rides" && renderRidesTab()}
-        {activeTab === "status" && renderStatusTab()}
-      </Animated.View>
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {renderContent()}
+      </ScrollView>
+      {renderNavModal()}
+      {renderWithdrawModal()}
     </View>
   );
 };
@@ -2667,6 +2774,236 @@ const styles = StyleSheet.create({
   },
   loader: {
     marginTop: 40,
+  },
+  otpInput: {
+    width: 45,
+    height: 55,
+    borderWidth: 2,
+    borderRadius: 8,
+    borderColor: '#cbd5e1',
+    textAlign: 'center',
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#1e293b',
+  },
+  // Wallet Styles
+  walletContainer: {
+    padding: 16,
+  },
+  walletSummaryCard: {
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
+  },
+  walletBalanceContainer: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  walletBalanceLabel: {
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.8)',
+  },
+  walletBalanceAmount: {
+    fontSize: 40,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  walletSubRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 20,
+  },
+  walletSubItem: {
+    alignItems: 'center',
+  },
+  walletSubLabel: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.7)',
+  },
+  walletSubValue: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  withdrawButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    paddingVertical: 14,
+    gap: 8,
+  },
+  withdrawButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#667eea',
+  },
+  walletStatsGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  walletStatItem: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    width: '32%',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+  },
+  walletStatLabel: {
+    fontSize: 12,
+    color: '#64748b',
+  },
+  walletStatValue: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1e293b',
+    marginTop: 4,
+  },
+  walletSection: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+  },
+  walletSectionTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#1e293b',
+    marginBottom: 12,
+  },
+  walletEmptyText: {
+    textAlign: 'center',
+    color: '#94a3b8',
+    paddingVertical: 20,
+  },
+  transactionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
+  },
+  transactionIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  transactionDetails: {
+    flex: 1,
+  },
+  transactionDescription: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1e293b',
+  },
+  transactionDate: {
+    fontSize: 12,
+    color: '#64748b',
+    marginTop: 2,
+  },
+  transactionAmount: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  withdrawalItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
+  },
+  withdrawalDetails: {},
+  withdrawalAmount: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1e293b',
+  },
+  withdrawalDate: {
+    fontSize: 12,
+    color: '#64748b',
+    marginTop: 2,
+  },
+  withdrawalStatusBadge: {
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  withdrawalStatusText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  // Withdraw Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContainer: {
+    width: '90%',
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 24,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1e293b',
+    textAlign: 'center',
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    color: '#64748b',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  modalInput: {
+    backgroundColor: '#f1f5f9',
+    borderRadius: 10,
+    padding: 14,
+    fontSize: 16,
+    marginBottom: 12,
+    color: '#1e293b',
+  },
+  modalError: {
+    color: '#f44336',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  modalButton: {
+    backgroundColor: '#667eea',
+    borderRadius: 10,
+    padding: 16,
+    alignItems: 'center',
+  },
+  modalButtonDisabled: {
+    backgroundColor: '#94a3b8',
+  },
+  modalButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  modalCancelButton: {
+    marginTop: 12,
+    padding: 10,
+    alignItems: 'center',
+  },
+  modalCancelButtonText: {
+    color: '#64748b',
+    fontSize: 14,
   },
 });
 

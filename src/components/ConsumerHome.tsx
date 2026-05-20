@@ -30,6 +30,7 @@ import Icon from '@react-native-vector-icons/material-icons';
 import OTPDisplay from './OTPDisplay';
 import OTPInput from './OTPInput';
 import { disconnectRealtimeSocket, getRealtimeSocket } from "../services/realtime";
+import { processPayment, createPaymentOrder } from "../services/payment";
 
 const { width } = Dimensions.get('window');
 
@@ -111,6 +112,13 @@ const ConsumerHome: React.FC = () => {
   const [otpAttempts, setOtpAttempts] = useState(0);
   const [otpLocked, setOtpLocked] = useState(false);
   const [showPickupOTPInput, setShowPickupOTPInput] = useState(false);
+
+  // Payment states
+  const [showPaymentScreen, setShowPaymentScreen] = useState(false);
+  const [paymentLoading, setPaymentLoading] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState<'pending' | 'processing' | 'success' | 'failed'>('pending');
+  const [paymentError, setPaymentError] = useState<string>('');
+  const [completedRideForPayment, setCompletedRideForPayment] = useState<any>(null);
 
 
   // Safety contacts — pre-filled for next ride, passed to booking API
@@ -524,7 +532,14 @@ const ConsumerHome: React.FC = () => {
               );
             }
 
-            if (event.status === "completed" || event.status === "cancelled") {
+            if (event.status === "completed") {
+              // Ride completed - show payment screen instead of clearing
+              clearRideSearchPolling();
+              clearActiveRidePolling();
+              setCompletedRideForPayment(activeRideRef.current);
+              setShowPaymentScreen(true);
+              setPaymentStatus('pending');
+            } else if (event.status === "cancelled") {
               clearRideSearchPolling();
               clearActiveRidePolling();
               resetRideUiState();
@@ -1351,6 +1366,75 @@ const ConsumerHome: React.FC = () => {
       return () => clearInterval(pollInterval);
     }
   }, [activeRide?.id, activeRide?.status, dropOTP]);
+
+  // Handle payment for completed ride
+  const handlePayment = async () => {
+    if (!completedRideForPayment) return;
+
+    setPaymentLoading(true);
+    setPaymentStatus('processing');
+    setPaymentError('');
+
+    try {
+      const result = await processPayment(
+        completedRideForPayment.id,
+        {
+          name: user?.fullName || 'Customer',
+          email: user?.email || '',
+          phone: user?.phone || '',
+        }
+      );
+
+      if (result.success) {
+        setPaymentStatus('success');
+        setTimeout(() => {
+          // Reset states after showing success
+          setShowPaymentScreen(false);
+          setCompletedRideForPayment(null);
+          resetRideUiState();
+          fetchRideHistory();
+          Alert.alert(
+            "Payment Successful! 🎉",
+            `Amount paid: ₹${result.payment?.amount || completedRideForPayment.fare}\n\nThank you for riding with SoberFolk!`
+          );
+        }, 2000);
+      } else {
+        if (result.cancelled) {
+          setPaymentStatus('pending');
+          setPaymentError('Payment was cancelled. Please try again.');
+        } else {
+          setPaymentStatus('failed');
+          setPaymentError(result.error || 'Payment failed. Please try again.');
+        }
+      }
+    } catch (error: any) {
+      console.error('Payment error:', error);
+      setPaymentStatus('failed');
+      setPaymentError(error.message || 'Payment failed. Please try again.');
+    } finally {
+      setPaymentLoading(false);
+    }
+  };
+
+  // Skip payment (for testing/support)
+  const handleSkipPayment = () => {
+    Alert.alert(
+      "Skip Payment?",
+      "You can pay later from your ride history. Continue?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Skip for Now",
+          onPress: () => {
+            setShowPaymentScreen(false);
+            setCompletedRideForPayment(null);
+            resetRideUiState();
+            fetchRideHistory();
+          }
+        }
+      ]
+    );
+  };
 
   // Poll for ride status
   const startRideStatusPolling = async (rideId: number) => {
@@ -2516,6 +2600,142 @@ const ConsumerHome: React.FC = () => {
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {renderContent()}
       </ScrollView>
+
+      {/* Payment Modal */}
+      <Modal
+        visible={showPaymentScreen}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => {
+          if (paymentStatus !== 'processing') {
+            handleSkipPayment();
+          }
+        }}
+      >
+        <View style={styles.paymentModalOverlay}>
+          <View style={styles.paymentModalContainer}>
+            {/* Payment Header */}
+            <LinearGradient
+              colors={['#667eea', '#764ba2']}
+              style={styles.paymentModalHeader}
+            >
+              <Icon name="payment" size={40} color="#fff" />
+              <Text style={styles.paymentModalTitle}>
+                {paymentStatus === 'success' ? 'Payment Successful!' : 'Complete Payment'}
+              </Text>
+            </LinearGradient>
+
+            {/* Payment Content */}
+            <View style={styles.paymentModalContent}>
+              {paymentStatus === 'success' ? (
+                <View style={styles.paymentSuccessContainer}>
+                  <View style={styles.paymentSuccessIcon}>
+                    <Icon name="check-circle" size={80} color="#4CAF50" />
+                  </View>
+                  <Text style={styles.paymentSuccessText}>Thank you for your payment!</Text>
+                  <Text style={styles.paymentSuccessAmount}>
+                    ₹{completedRideForPayment?.fare || '0'}
+                  </Text>
+                </View>
+              ) : (
+                <>
+                  {/* Ride Summary */}
+                  <View style={styles.paymentRideSummary}>
+                    <Text style={styles.paymentSectionTitle}>Ride Summary</Text>
+                    <View style={styles.paymentLocationRow}>
+                      <View style={styles.paymentLocationDot} />
+                      <Text style={styles.paymentLocationText} numberOfLines={2}>
+                        {completedRideForPayment?.pickup_address || 'Pickup Location'}
+                      </Text>
+                    </View>
+                    <View style={styles.paymentLocationLine} />
+                    <View style={styles.paymentLocationRow}>
+                      <View style={[styles.paymentLocationDot, { backgroundColor: '#f44336' }]} />
+                      <Text style={styles.paymentLocationText} numberOfLines={2}>
+                        {completedRideForPayment?.drop_address || 'Drop Location'}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Fare Breakdown */}
+                  <View style={styles.paymentFareBreakdown}>
+                    <Text style={styles.paymentSectionTitle}>Fare Details</Text>
+                    <View style={styles.paymentFareRow}>
+                      <Text style={styles.paymentFareLabel}>Distance</Text>
+                      <Text style={styles.paymentFareValue}>
+                        {completedRideForPayment?.distance ? `${completedRideForPayment.distance} km` : '-'}
+                      </Text>
+                    </View>
+                    <View style={styles.paymentFareRow}>
+                      <Text style={styles.paymentFareLabel}>Duration</Text>
+                      <Text style={styles.paymentFareValue}>
+                        {completedRideForPayment?.duration ? `${completedRideForPayment.duration} mins` : '-'}
+                      </Text>
+                    </View>
+                    <View style={[styles.paymentFareRow, styles.paymentFareTotalRow]}>
+                      <Text style={styles.paymentFareTotalLabel}>Total Amount</Text>
+                      <Text style={styles.paymentFareTotalValue}>
+                        ₹{completedRideForPayment?.fare || '0'}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Error Message */}
+                  {paymentError ? (
+                    <View style={styles.paymentErrorContainer}>
+                      <Icon name="error-outline" size={20} color="#f44336" />
+                      <Text style={styles.paymentErrorText}>{paymentError}</Text>
+                    </View>
+                  ) : null}
+
+                  {/* Payment Buttons */}
+                  <View style={styles.paymentButtonsContainer}>
+                    <TouchableOpacity
+                      style={[
+                        styles.paymentPayButton,
+                        paymentLoading && styles.paymentButtonDisabled
+                      ]}
+                      onPress={handlePayment}
+                      disabled={paymentLoading}
+                    >
+                      <LinearGradient
+                        colors={paymentLoading ? ['#94a3b8', '#94a3b8'] : ['#667eea', '#764ba2']}
+                        style={styles.paymentPayButtonGradient}
+                      >
+                        {paymentLoading ? (
+                          <ActivityIndicator size="small" color="#fff" />
+                        ) : (
+                          <>
+                            <Icon name="lock" size={20} color="#fff" />
+                            <Text style={styles.paymentPayButtonText}>
+                              Pay ₹{completedRideForPayment?.fare || '0'}
+                            </Text>
+                          </>
+                        )}
+                      </LinearGradient>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={styles.paymentSkipButton}
+                      onPress={handleSkipPayment}
+                      disabled={paymentLoading}
+                    >
+                      <Text style={styles.paymentSkipButtonText}>Pay Later</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* Secure Payment Badge */}
+                  <View style={styles.paymentSecureBadge}>
+                    <Icon name="verified-user" size={16} color="#667eea" />
+                    <Text style={styles.paymentSecureText}>Secured by Razorpay</Text>
+                  </View>
+                </>
+              )}
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       {renderSafetyModal()}
       {renderContactPickerModal()}
     </View>
@@ -3691,6 +3911,187 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#64748b',
     marginTop: 4,
+  },
+  // Payment Modal Styles
+  paymentModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'flex-end',
+  },
+  paymentModalContainer: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: '90%',
+  },
+  paymentModalHeader: {
+    padding: 24,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    alignItems: 'center',
+  },
+  paymentModalTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginTop: 12,
+  },
+  paymentModalContent: {
+    padding: 20,
+  },
+  paymentSuccessContainer: {
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  paymentSuccessIcon: {
+    marginBottom: 20,
+  },
+  paymentSuccessText: {
+    fontSize: 18,
+    color: '#1e293b',
+    marginBottom: 10,
+  },
+  paymentSuccessAmount: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#4CAF50',
+  },
+  paymentRideSummary: {
+    backgroundColor: '#f8fafc',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+  },
+  paymentSectionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#64748b',
+    marginBottom: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  paymentLocationRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingVertical: 8,
+  },
+  paymentLocationDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#4CAF50',
+    marginRight: 12,
+    marginTop: 4,
+  },
+  paymentLocationLine: {
+    width: 2,
+    height: 20,
+    backgroundColor: '#e2e8f0',
+    marginLeft: 5,
+  },
+  paymentLocationText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#1e293b',
+    lineHeight: 20,
+  },
+  paymentFareBreakdown: {
+    backgroundColor: '#f8fafc',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+  },
+  paymentFareRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e2e8f0',
+  },
+  paymentFareLabel: {
+    fontSize: 14,
+    color: '#64748b',
+  },
+  paymentFareValue: {
+    fontSize: 14,
+    color: '#1e293b',
+    fontWeight: '500',
+  },
+  paymentFareTotalRow: {
+    borderBottomWidth: 0,
+    marginTop: 8,
+    paddingTop: 12,
+    borderTopWidth: 2,
+    borderTopColor: '#e2e8f0',
+  },
+  paymentFareTotalLabel: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1e293b',
+  },
+  paymentFareTotalValue: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#667eea',
+  },
+  paymentErrorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fef2f2',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+  },
+  paymentErrorText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#f44336',
+    marginLeft: 8,
+  },
+  paymentButtonsContainer: {
+    marginTop: 8,
+  },
+  paymentPayButton: {
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginBottom: 12,
+  },
+  paymentButtonDisabled: {
+    opacity: 0.7,
+  },
+  paymentPayButtonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    gap: 8,
+  },
+  paymentPayButtonText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  paymentSkipButton: {
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  paymentSkipButtonText: {
+    fontSize: 14,
+    color: '#64748b',
+    textDecorationLine: 'underline',
+  },
+  paymentSecureBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 16,
+    paddingVertical: 8,
+  },
+  paymentSecureText: {
+    fontSize: 12,
+    color: '#667eea',
+    marginLeft: 6,
   },
 });
 
