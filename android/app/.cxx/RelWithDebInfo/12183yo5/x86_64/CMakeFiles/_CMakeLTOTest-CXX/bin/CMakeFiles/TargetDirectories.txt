@@ -1,0 +1,4 @@
+E:/Android/SoberFolk/android/app/.cxx/RelWithDebInfo/12183yo5/x86_64/CMakeFiles/_CMakeLTOTest-CXX/bin/CMakeFiles/foo.dir
+E:/Android/SoberFolk/android/app/.cxx/RelWithDebInfo/12183yo5/x86_64/CMakeFiles/_CMakeLTOTest-CXX/bin/CMakeFiles/boo.dir
+E:/Android/SoberFolk/android/app/.cxx/RelWithDebInfo/12183yo5/x86_64/CMakeFiles/_CMakeLTOTest-CXX/bin/CMakeFiles/edit_cache.dir
+E:/Android/SoberFolk/android/app/.cxx/RelWithDebInfo/12183yo5/x86_64/CMakeFiles/_CMakeLTOTest-CXX/bin/CMakeFiles/rebuild_cache.dir

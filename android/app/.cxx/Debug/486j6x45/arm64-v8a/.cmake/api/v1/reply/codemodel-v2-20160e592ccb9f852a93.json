@@ -1,0 +1,338 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"childIndexes" : 
+					[
+						1,
+						2,
+						3,
+						4,
+						5,
+						6,
+						7,
+						8,
+						9,
+						10,
+						11
+					],
+					"jsonFile" : "directory-.-Debug-d0094a50bb2071803777.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.13"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						0
+					]
+				},
+				{
+					"build" : "rnasyncstorage_autolinked_build",
+					"jsonFile" : "directory-rnasyncstorage_autolinked_build-Debug-e2ce33068d0213728a30.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.13"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "E:/Android/SoberFolk/node_modules/@react-native-async-storage/async-storage/android/build/generated/source/codegen/jni",
+					"targetIndexes" : 
+					[
+						6
+					]
+				},
+				{
+					"build" : "RNCGeolocationSpec_autolinked_build",
+					"jsonFile" : "directory-RNCGeolocationSpec_autolinked_build-Debug-be730734ff31c0f65a51.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.13"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "E:/Android/SoberFolk/node_modules/@react-native-community/geolocation/android/build/generated/source/codegen/jni",
+					"targetIndexes" : 
+					[
+						1
+					]
+				},
+				{
+					"build" : "VectorIconsMaterialIcons_autolinked_build",
+					"jsonFile" : "directory-VectorIconsMaterialIcons_autolinked_build-Debug-245116ba37ceceb99c59.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.13"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "E:/Android/SoberFolk/node_modules/@react-native-vector-icons/material-icons/android/build/generated/source/codegen/jni",
+					"targetIndexes" : 
+					[
+						5
+					]
+				},
+				{
+					"build" : "RNContactsSpec_autolinked_build",
+					"jsonFile" : "directory-RNContactsSpec_autolinked_build-Debug-79e43a9c5d33f154aec6.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.13"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "E:/Android/SoberFolk/node_modules/react-native-contacts/android/build/generated/source/codegen/jni",
+					"targetIndexes" : 
+					[
+						2
+					]
+				},
+				{
+					"build" : "rngesturehandler_codegen_autolinked_build",
+					"jsonFile" : "directory-rngesturehandler_codegen_autolinked_build-Debug-926c0298a38c5d9b066b.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.13"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "E:/Android/SoberFolk/node_modules/react-native-gesture-handler/android/build/generated/source/codegen/jni",
+					"targetIndexes" : 
+					[
+						7
+					]
+				},
+				{
+					"build" : "RNImagePickerSpec_autolinked_build",
+					"jsonFile" : "directory-RNImagePickerSpec_autolinked_build-Debug-99bb599653b8774386f8.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.13"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "E:/Android/SoberFolk/node_modules/react-native-image-picker/android/build/generated/source/codegen/jni",
+					"targetIndexes" : 
+					[
+						3
+					]
+				},
+				{
+					"build" : "RNMapsSpecs_autolinked_build",
+					"jsonFile" : "directory-RNMapsSpecs_autolinked_build-Debug-a3f843397017c783acd3.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.13"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "E:/Android/SoberFolk/node_modules/react-native-maps/android/src/main/jni",
+					"targetIndexes" : 
+					[
+						4
+					]
+				},
+				{
+					"build" : "rnreanimated_autolinked_build",
+					"jsonFile" : "directory-rnreanimated_autolinked_build-Debug-d379e8032cfad8f60259.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.13"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "E:/Android/SoberFolk/node_modules/react-native-reanimated/android/build/generated/source/codegen/jni",
+					"targetIndexes" : 
+					[
+						8
+					]
+				},
+				{
+					"build" : "safeareacontext_autolinked_build",
+					"jsonFile" : "directory-safeareacontext_autolinked_build-Debug-efa349ea564cc4e157eb.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.13"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "E:/Android/SoberFolk/node_modules/react-native-safe-area-context/android/src/main/jni",
+					"targetIndexes" : 
+					[
+						11
+					]
+				},
+				{
+					"build" : "rnscreens_autolinked_build",
+					"jsonFile" : "directory-rnscreens_autolinked_build-Debug-1dbb50d55013483db0b0.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.13"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "E:/Android/SoberFolk/node_modules/react-native-screens/android/src/main/jni",
+					"targetIndexes" : 
+					[
+						9
+					]
+				},
+				{
+					"build" : "rnworklets_autolinked_build",
+					"jsonFile" : "directory-rnworklets_autolinked_build-Debug-2d5c4f55d62c3ed1dce5.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.13"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "E:/Android/SoberFolk/node_modules/react-native-worklets/android/build/generated/source/codegen/jni",
+					"targetIndexes" : 
+					[
+						10
+					]
+				}
+			],
+			"name" : "Debug",
+			"projects" : 
+			[
+				{
+					"directoryIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						4,
+						5,
+						6,
+						7,
+						8,
+						9,
+						10,
+						11
+					],
+					"name" : "appmodules",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						4,
+						5,
+						6,
+						7,
+						8,
+						9,
+						10,
+						11
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "appmodules::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-appmodules-Debug-5ad200a9aea30988edb6.json",
+					"name" : "appmodules",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 2,
+					"id" : "react_codegen_RNCGeolocationSpec::@1b959fcb56e23f7716ba",
+					"jsonFile" : "target-react_codegen_RNCGeolocationSpec-Debug-a9523c98c24611be1e9e.json",
+					"name" : "react_codegen_RNCGeolocationSpec",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 4,
+					"id" : "react_codegen_RNContactsSpec::@f22bb5a2f7260e3ff95a",
+					"jsonFile" : "target-react_codegen_RNContactsSpec-Debug-2067512df7c5a7990698.json",
+					"name" : "react_codegen_RNContactsSpec",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 6,
+					"id" : "react_codegen_RNImagePickerSpec::@f66ee9a2efecfb28bee4",
+					"jsonFile" : "target-react_codegen_RNImagePickerSpec-Debug-2c94cf2b1f1b022ffb95.json",
+					"name" : "react_codegen_RNImagePickerSpec",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 7,
+					"id" : "react_codegen_RNMapsSpecs::@5748abef1962d24942ec",
+					"jsonFile" : "target-react_codegen_RNMapsSpecs-Debug-a2c663b98eba3227a694.json",
+					"name" : "react_codegen_RNMapsSpecs",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 3,
+					"id" : "react_codegen_VectorIconsMaterialIcons::@31616434fa1e3b43792c",
+					"jsonFile" : "target-react_codegen_VectorIconsMaterialIcons-Debug-e862439d98c7f374a8e5.json",
+					"name" : "react_codegen_VectorIconsMaterialIcons",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 1,
+					"id" : "react_codegen_rnasyncstorage::@1596841e19ec5b9eeffe",
+					"jsonFile" : "target-react_codegen_rnasyncstorage-Debug-a4c06cbe128446b3b345.json",
+					"name" : "react_codegen_rnasyncstorage",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 5,
+					"id" : "react_codegen_rngesturehandler_codegen::@39f233abcd2c728bc6ec",
+					"jsonFile" : "target-react_codegen_rngesturehandler_codegen-Debug-2970344c01816058f2fd.json",
+					"name" : "react_codegen_rngesturehandler_codegen",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 8,
+					"id" : "react_codegen_rnreanimated::@8afabad14bfffa3f8b9a",
+					"jsonFile" : "target-react_codegen_rnreanimated-Debug-64c0c94209a59bf30b85.json",
+					"name" : "react_codegen_rnreanimated",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 10,
+					"id" : "react_codegen_rnscreens::@25bcbd507e98d3a854ad",
+					"jsonFile" : "target-react_codegen_rnscreens-Debug-09b6ccf973311ed9b45a.json",
+					"name" : "react_codegen_rnscreens",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 11,
+					"id" : "react_codegen_rnworklets::@68f58d84d4754f193387",
+					"jsonFile" : "target-react_codegen_rnworklets-Debug-1d47c32d5b5db6ec03c1.json",
+					"name" : "react_codegen_rnworklets",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 9,
+					"id" : "react_codegen_safeareacontext::@7984cd80db47aa7b952a",
+					"jsonFile" : "target-react_codegen_safeareacontext-Debug-fb375672d77f04e79614.json",
+					"name" : "react_codegen_safeareacontext",
+					"projectIndex" : 0
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "E:/Android/SoberFolk/android/app/.cxx/Debug/486j6x45/arm64-v8a",
+		"source" : "E:/Android/SoberFolk/node_modules/react-native/ReactAndroid/cmake-utils/default-app-setup"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 3
+	}
+}
