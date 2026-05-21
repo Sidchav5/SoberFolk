@@ -1,7 +1,7 @@
 if(NOT TARGET react-native-reanimated::reanimated)
 add_library(react-native-reanimated::reanimated SHARED IMPORTED)
 set_target_properties(react-native-reanimated::reanimated PROPERTIES
-    IMPORTED_LOCATION "E:/Android/SoberFolk/node_modules/react-native-reanimated/android/build/intermediates/cxx/Debug/363s5e25/obj/arm64-v8a/libreanimated.so"
+    IMPORTED_LOCATION "E:/Android/SoberFolk/node_modules/react-native-reanimated/android/build/intermediates/cxx/Debug/6g293513/obj/arm64-v8a/libreanimated.so"
     INTERFACE_INCLUDE_DIRECTORIES "E:/Android/SoberFolk/node_modules/react-native-reanimated/android/build/prefab-headers/reanimated"
     INTERFACE_LINK_LIBRARIES ""
 )

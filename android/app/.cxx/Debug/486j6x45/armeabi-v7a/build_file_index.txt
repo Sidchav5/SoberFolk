@@ -5,6 +5,7 @@ E:\Android\SoberFolk\node_modules\react-native-contacts\android\build\generated\
 E:\Android\SoberFolk\node_modules\react-native-gesture-handler\android\build\generated\source\codegen\jni\CMakeLists.txt
 E:\Android\SoberFolk\node_modules\react-native-image-picker\android\build\generated\source\codegen\jni\CMakeLists.txt
 E:\Android\SoberFolk\node_modules\react-native-maps\android\src\main\jni\CMakeLists.txt
+E:\Android\SoberFolk\node_modules\react-native-razorpay\android\build\generated\source\codegen\jni\CMakeLists.txt
 E:\Android\SoberFolk\node_modules\react-native-reanimated\android\build\generated\source\codegen\jni\CMakeLists.txt
 E:\Android\SoberFolk\node_modules\react-native-safe-area-context\android\src\main\jni\CMakeLists.txt
 E:\Android\SoberFolk\node_modules\react-native-screens\android\src\main\jni\CMakeLists.txt

@@ -1,8 +1,8 @@
 if(NOT TARGET hermes-engine::libhermes)
 add_library(hermes-engine::libhermes SHARED IMPORTED)
 set_target_properties(hermes-engine::libhermes PROPERTIES
-    IMPORTED_LOCATION "C:/GradleHomeSoberFolk/caches/8.14.3/transforms/7cf4a42ed1e9c4328acd062300cf3c40/transformed/hermes-android-0.81.5-debug/prefab/modules/libhermes/libs/android.x86_64/libhermes.so"
-    INTERFACE_INCLUDE_DIRECTORIES "C:/GradleHomeSoberFolk/caches/8.14.3/transforms/7cf4a42ed1e9c4328acd062300cf3c40/transformed/hermes-android-0.81.5-debug/prefab/modules/libhermes/include"
+    IMPORTED_LOCATION "C:/GradleHomeSoberFolk/caches/8.14.3/transforms/a111e92214493b6c15d4d5f3fbb52b57/transformed/hermes-android-0.81.6-debug/prefab/modules/libhermes/libs/android.x86_64/libhermes.so"
+    INTERFACE_INCLUDE_DIRECTORIES "C:/GradleHomeSoberFolk/caches/8.14.3/transforms/a111e92214493b6c15d4d5f3fbb52b57/transformed/hermes-android-0.81.6-debug/prefab/modules/libhermes/include"
     INTERFACE_LINK_LIBRARIES ""
 )
 endif()

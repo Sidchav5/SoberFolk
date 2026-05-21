@@ -187,6 +187,31 @@ if(NOT "${NEW_GLOB}" STREQUAL "${OLD_GLOB}")
   file(TOUCH_NOCREATE "E:/Android/SoberFolk/android/app/.cxx/RelWithDebInfo/12183yo5/x86_64/CMakeFiles/cmake.verify_globs")
 endif()
 
+# react_codegen_SRCS at E:/Android/SoberFolk/node_modules/react-native-razorpay/android/build/generated/source/codegen/jni/CMakeLists.txt:9 (file)
+file(GLOB NEW_GLOB LIST_DIRECTORIES true "E:/Android/SoberFolk/node_modules/react-native-razorpay/android/build/generated/source/codegen/jni/*.cpp")
+set(OLD_GLOB
+  "E:/Android/SoberFolk/node_modules/react-native-razorpay/android/build/generated/source/codegen/jni/RNRazorpayCheckoutSpec-generated.cpp"
+  )
+if(NOT "${NEW_GLOB}" STREQUAL "${OLD_GLOB}")
+  message("-- GLOB mismatch!")
+  file(TOUCH_NOCREATE "E:/Android/SoberFolk/android/app/.cxx/RelWithDebInfo/12183yo5/x86_64/CMakeFiles/cmake.verify_globs")
+endif()
+
+# react_codegen_SRCS at E:/Android/SoberFolk/node_modules/react-native-razorpay/android/build/generated/source/codegen/jni/CMakeLists.txt:9 (file)
+file(GLOB NEW_GLOB LIST_DIRECTORIES true "E:/Android/SoberFolk/node_modules/react-native-razorpay/android/build/generated/source/codegen/jni/react/renderer/components/RNRazorpayCheckoutSpec/*.cpp")
+set(OLD_GLOB
+  "E:/Android/SoberFolk/node_modules/react-native-razorpay/android/build/generated/source/codegen/jni/react/renderer/components/RNRazorpayCheckoutSpec/ComponentDescriptors.cpp"
+  "E:/Android/SoberFolk/node_modules/react-native-razorpay/android/build/generated/source/codegen/jni/react/renderer/components/RNRazorpayCheckoutSpec/EventEmitters.cpp"
+  "E:/Android/SoberFolk/node_modules/react-native-razorpay/android/build/generated/source/codegen/jni/react/renderer/components/RNRazorpayCheckoutSpec/Props.cpp"
+  "E:/Android/SoberFolk/node_modules/react-native-razorpay/android/build/generated/source/codegen/jni/react/renderer/components/RNRazorpayCheckoutSpec/RNRazorpayCheckoutSpecJSI-generated.cpp"
+  "E:/Android/SoberFolk/node_modules/react-native-razorpay/android/build/generated/source/codegen/jni/react/renderer/components/RNRazorpayCheckoutSpec/ShadowNodes.cpp"
+  "E:/Android/SoberFolk/node_modules/react-native-razorpay/android/build/generated/source/codegen/jni/react/renderer/components/RNRazorpayCheckoutSpec/States.cpp"
+  )
+if(NOT "${NEW_GLOB}" STREQUAL "${OLD_GLOB}")
+  message("-- GLOB mismatch!")
+  file(TOUCH_NOCREATE "E:/Android/SoberFolk/android/app/.cxx/RelWithDebInfo/12183yo5/x86_64/CMakeFiles/cmake.verify_globs")
+endif()
+
 # react_codegen_SRCS at E:/Android/SoberFolk/node_modules/react-native-reanimated/android/build/generated/source/codegen/jni/CMakeLists.txt:9 (file)
 file(GLOB NEW_GLOB LIST_DIRECTORIES true "E:/Android/SoberFolk/node_modules/react-native-reanimated/android/build/generated/source/codegen/jni/*.cpp")
 set(OLD_GLOB

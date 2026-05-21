@@ -30,7 +30,7 @@ import Icon from '@react-native-vector-icons/material-icons';
 import OTPDisplay from './OTPDisplay';
 import OTPInput from './OTPInput';
 import { disconnectRealtimeSocket, getRealtimeSocket } from "../services/realtime";
-import { processPayment, createPaymentOrder } from "../services/payment";
+import { processPayment } from "../services/payment";
 
 const { width } = Dimensions.get('window');
 
@@ -284,6 +284,36 @@ const ConsumerHome: React.FC = () => {
     setPassengerId(null);
   };
 
+  const buildPaymentRide = (ride: any) => {
+    if (!ride) {
+      return null;
+    }
+
+    return {
+      ...ride,
+      pickup_address: ride.pickup_address || ride.pickupAddress || ride.pickup?.address || pickup || 'Pickup Location',
+      drop_address: ride.drop_address || ride.dropAddress || ride.drop?.address || drop || 'Drop Location',
+      fare: ride.fare || ride.totalFare || ride.amount || 0,
+      distance: ride.distance || routeInfo?.distance,
+      duration: ride.duration || routeInfo?.duration,
+    };
+  };
+
+  const showPaymentForRide = (ride: any) => {
+    const paymentRide = buildPaymentRide(ride);
+    if (!paymentRide?.id) {
+      return;
+    }
+
+    clearRideSearchPolling();
+    clearActiveRidePolling();
+    setCompletedRideForPayment(paymentRide);
+    setShowPaymentScreen(true);
+    setPaymentStatus('pending');
+    setPaymentError('');
+    setPaymentLoading(false);
+  };
+
   useEffect(() => {
     activeRideRef.current = activeRide;
   }, [activeRide]);
@@ -533,12 +563,11 @@ const ConsumerHome: React.FC = () => {
             }
 
             if (event.status === "completed") {
-              // Ride completed - show payment screen instead of clearing
-              clearRideSearchPolling();
-              clearActiveRidePolling();
-              setCompletedRideForPayment(activeRideRef.current);
-              setShowPaymentScreen(true);
-              setPaymentStatus('pending');
+              showPaymentForRide({
+                ...currentRide,
+                status: "completed",
+                ...(event.ride || {}),
+              });
             } else if (event.status === "cancelled") {
               clearRideSearchPolling();
               clearActiveRidePolling();
@@ -1181,6 +1210,12 @@ const ConsumerHome: React.FC = () => {
       const data = await response.json();
 
       if (response.ok && data.success && data.ride) {
+        if (data.ride.status === 'completed') {
+          showPaymentForRide(data.ride);
+          await fetchRideHistory();
+          return;
+        }
+
         if (data.ride.status === 'pending') {
           setCurrentRideRequest({
             ...data.ride,
@@ -1207,6 +1242,15 @@ const ConsumerHome: React.FC = () => {
         clearActiveRidePolling();
 
         if (activeRide) {
+          if (activeRide.status === 'in_progress') {
+            showPaymentForRide({
+              ...activeRide,
+              status: 'completed',
+            });
+            await fetchRideHistory();
+            return;
+          }
+
           await fetchRideHistory();
         }
 
@@ -1893,6 +1937,34 @@ const ConsumerHome: React.FC = () => {
       case "BookRide":
         return (
           <Animated.View style={[styles.mapContainer, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+            {completedRideForPayment && paymentStatus !== 'success' && !showPaymentScreen && (
+              <View style={styles.paymentPromptCard}>
+                <View style={styles.paymentPromptTextBlock}>
+                  <Text style={styles.paymentPromptTitle}>Ride completed</Text>
+                  <Text style={styles.paymentPromptSubtitle}>
+                    Fare due: ₹{completedRideForPayment.fare || '0'}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.paymentPromptButton}
+                  onPress={() => {
+                    setPaymentError('');
+                    setPaymentStatus('pending');
+                    setShowPaymentScreen(true);
+                  }}
+                  activeOpacity={0.85}
+                >
+                  <LinearGradient
+                    colors={['#667eea', '#764ba2']}
+                    style={styles.paymentPromptButtonGradient}
+                  >
+                    <Icon name="payment" size={18} color="#fff" />
+                    <Text style={styles.paymentPromptButtonText}>Pay Now</Text>
+                  </LinearGradient>
+                </TouchableOpacity>
+              </View>
+            )}
+
             {/* Active Ride Banner */}
             {activeRide && (
               <View style={styles.activeRideBanner}>
@@ -2708,7 +2780,7 @@ const ConsumerHome: React.FC = () => {
                           <>
                             <Icon name="lock" size={20} color="#fff" />
                             <Text style={styles.paymentPayButtonText}>
-                              Pay ₹{completedRideForPayment?.fare || '0'}
+                              Pay Now ₹{completedRideForPayment?.fare || '0'}
                             </Text>
                           </>
                         )}
@@ -3422,6 +3494,55 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 8,
     maxHeight: 500,
+  },
+  paymentPromptCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    backgroundColor: '#fff',
+    borderRadius: 18,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 4,
+  },
+  paymentPromptTextBlock: {
+    flex: 1,
+  },
+  paymentPromptTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#1e293b',
+    marginBottom: 4,
+  },
+  paymentPromptSubtitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#64748b',
+  },
+  paymentPromptButton: {
+    borderRadius: 14,
+    overflow: 'hidden',
+  },
+  paymentPromptButtonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 14,
+  },
+  paymentPromptButtonText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '800',
   },
   activeRideBannerScroll: {
     maxHeight: 500,

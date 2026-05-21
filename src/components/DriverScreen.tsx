@@ -18,6 +18,7 @@ import {
   TextInput,
   AppState,
   NativeModules,
+  Modal,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
@@ -125,12 +126,16 @@ const DriverScreen: React.FC = () => {
       setWalletLoading(true);
     }
     try {
-      const [summaryRes, transactionsRes, withdrawalsRes] = await Promise.all([
+      const [walletRes, summaryRes, transactionsRes, withdrawalsRes] = await Promise.all([
+        getWallet(),
         getWalletSummary(),
         getTransactions(),
         getWithdrawals(),
       ]);
 
+      if (walletRes.success && walletRes.wallet) {
+        setWallet(walletRes.wallet);
+      }
       if (summaryRes.success && summaryRes.summary) {
         setWalletSummary(summaryRes.summary);
       }
@@ -1482,6 +1487,173 @@ const DriverScreen: React.FC = () => {
 
   const hasActiveRide = isDriverRideActive(activeRide);
 
+  const renderWalletTab = () => (
+    <View style={styles.walletContainer}>
+      {walletLoading ? (
+        <ActivityIndicator size="large" color="#667eea" style={styles.loader} />
+      ) : (
+        <>
+          <LinearGradient colors={['#667eea', '#764ba2']} style={styles.walletSummaryCard}>
+            <View style={styles.walletBalanceContainer}>
+              <Text style={styles.walletBalanceLabel}>Available Balance</Text>
+              <Text style={styles.walletBalanceAmount}>
+                {formatCurrency(walletSummary?.availableBalance || wallet?.availableBalance || 0)}
+              </Text>
+            </View>
+
+            <View style={styles.walletSubRow}>
+              <View style={styles.walletSubItem}>
+                <Text style={styles.walletSubLabel}>Total Earned</Text>
+                <Text style={styles.walletSubValue}>{formatCurrency(wallet?.totalEarnings || 0)}</Text>
+              </View>
+              <View style={styles.walletSubItem}>
+                <Text style={styles.walletSubLabel}>Pending</Text>
+                <Text style={styles.walletSubValue}>{formatCurrency(walletSummary?.pendingWithdrawal || 0)}</Text>
+              </View>
+            </View>
+
+            <TouchableOpacity style={styles.withdrawButton} onPress={() => setShowWithdrawModal(true)}>
+              <Icon name="payments" size={20} color="#667eea" />
+              <Text style={styles.withdrawButtonText}>Withdraw</Text>
+            </TouchableOpacity>
+          </LinearGradient>
+
+          <View style={styles.walletStatsGrid}>
+            <View style={styles.walletStatItem}>
+              <Text style={styles.walletStatLabel}>Today</Text>
+              <Text style={styles.walletStatValue}>{formatCurrency(walletSummary?.todayEarnings || 0)}</Text>
+            </View>
+            <View style={styles.walletStatItem}>
+              <Text style={styles.walletStatLabel}>Week</Text>
+              <Text style={styles.walletStatValue}>{formatCurrency(walletSummary?.weekEarnings || 0)}</Text>
+            </View>
+            <View style={styles.walletStatItem}>
+              <Text style={styles.walletStatLabel}>Month</Text>
+              <Text style={styles.walletStatValue}>{formatCurrency(walletSummary?.monthEarnings || 0)}</Text>
+            </View>
+          </View>
+
+          <View style={styles.walletSection}>
+            <Text style={styles.walletSectionTitle}>Recent Transactions</Text>
+            {walletTransactions.length === 0 ? (
+              <Text style={styles.walletEmptyText}>No transactions yet</Text>
+            ) : (
+              walletTransactions.slice(0, 6).map((transaction) => {
+                const color = getTransactionTypeColor(transaction.type);
+                return (
+                  <View key={transaction.id} style={styles.transactionItem}>
+                    <View style={[styles.transactionIcon, { backgroundColor: `${color}22` }]}>
+                      <Icon name={transaction.type === 'credit' ? 'arrow-downward' : 'arrow-upward'} size={18} color={color} />
+                    </View>
+                    <View style={styles.transactionDetails}>
+                      <Text style={styles.transactionDescription}>
+                        {transaction.description || getTransactionTypeLabel(transaction.type)}
+                      </Text>
+                      <Text style={styles.transactionDate}>
+                        {transaction.createdAt ? new Date(transaction.createdAt).toLocaleDateString() : ''}
+                      </Text>
+                    </View>
+                    <Text style={[styles.transactionAmount, { color }]}>
+                      {transaction.type === 'credit' ? '+' : '-'}{formatCurrency(transaction.amount || 0)}
+                    </Text>
+                  </View>
+                );
+              })
+            )}
+          </View>
+
+          <View style={styles.walletSection}>
+            <Text style={styles.walletSectionTitle}>Withdrawals</Text>
+            {withdrawals.length === 0 ? (
+              <Text style={styles.walletEmptyText}>No withdrawal requests</Text>
+            ) : (
+              withdrawals.slice(0, 5).map((withdrawal) => (
+                <View key={withdrawal.id} style={styles.withdrawalItem}>
+                  <View style={styles.withdrawalDetails}>
+                    <Text style={styles.withdrawalAmount}>{formatCurrency(withdrawal.amount)}</Text>
+                    <Text style={styles.withdrawalDate}>
+                      {withdrawal.createdAt ? new Date(withdrawal.createdAt).toLocaleDateString() : ''}
+                    </Text>
+                  </View>
+                  <View style={[styles.withdrawalStatusBadge, { backgroundColor: getWithdrawalStatusColor(withdrawal.status) }]}>
+                    <Text style={styles.withdrawalStatusText}>{withdrawal.status.toUpperCase()}</Text>
+                  </View>
+                </View>
+              ))
+            )}
+          </View>
+        </>
+      )}
+    </View>
+  );
+
+  const renderContent = () => {
+    if (activeTab === "rides") return renderRidesTab();
+    if (activeTab === "status") return renderStatusTab();
+    if (activeTab === "wallet") return renderWalletTab();
+    return renderProfileTab();
+  };
+
+  const renderNavModal = () => null;
+
+  const renderWithdrawModal = () => (
+    <Modal
+      visible={showWithdrawModal}
+      animationType="fade"
+      transparent
+      onRequestClose={() => setShowWithdrawModal(false)}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContainer}>
+          <Text style={styles.modalTitle}>Withdraw Earnings</Text>
+          <Text style={styles.modalSubtitle}>Enter amount and UPI ID for your withdrawal request.</Text>
+
+          <TextInput
+            style={styles.modalInput}
+            value={withdrawAmount}
+            onChangeText={setWithdrawAmount}
+            placeholder="Amount"
+            placeholderTextColor="#94a3b8"
+            keyboardType="numeric"
+          />
+          <TextInput
+            style={styles.modalInput}
+            value={withdrawUpiId}
+            onChangeText={setWithdrawUpiId}
+            placeholder="UPI ID"
+            placeholderTextColor="#94a3b8"
+            autoCapitalize="none"
+          />
+
+          {withdrawError ? <Text style={styles.modalError}>{withdrawError}</Text> : null}
+
+          <TouchableOpacity
+            style={[styles.modalButton, withdrawLoading && styles.modalButtonDisabled]}
+            onPress={handleWithdraw}
+            disabled={withdrawLoading}
+          >
+            {withdrawLoading ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text style={styles.modalButtonText}>Submit Request</Text>
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.modalCancelButton}
+            onPress={() => {
+              setShowWithdrawModal(false);
+              setWithdrawError('');
+            }}
+            disabled={withdrawLoading}
+          >
+            <Text style={styles.modalCancelButtonText}>Cancel</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+
   // Render profile tab
   const renderProfileTab = () => (
     <ScrollView
@@ -1653,6 +1825,29 @@ const DriverScreen: React.FC = () => {
               <View style={styles.fareBadge}>
                 <Text style={styles.fareText}>₹{ride.fare}</Text>
               </View>
+              <TouchableOpacity
+                style={styles.rateNowButton}
+                onPress={() => {
+                  const customerInfo = ride.consumer ? {
+                    name: ride.consumer.name,
+                    phone: ride.consumer.phone,
+                    profilePhoto: ride.consumer.profilePhoto || null,
+                  } : null;
+                  const rideDetails = {
+                    pickup: ride.pickup?.address || "Pickup location",
+                    drop: ride.drop?.address || "Drop location",
+                    fare: ride.fare,
+                    date: new Date(ride.createdAt).toLocaleString(),
+                  };
+                  navigation.navigate("DriverFeedback", { rideId: ride.id, customerInfo, rideDetails });
+                }}
+                activeOpacity={0.85}
+              >
+                <LinearGradient colors={['#667eea', '#764ba2']} style={styles.rateNowGradient}>
+                  <Icon name="star" size={15} color="#fff" />
+                  <Text style={styles.rateNowText}>Rate Now</Text>
+                </LinearGradient>
+              </TouchableOpacity>
             </View>
           </View>
         ))
@@ -2448,6 +2643,23 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 'bold',
     color: '#fff',
+  },
+  rateNowButton: {
+    borderRadius: 18,
+    overflow: 'hidden',
+  },
+  rateNowGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 18,
+  },
+  rateNowText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '700',
   },
   activeRideSection: {
     marginBottom: 20,

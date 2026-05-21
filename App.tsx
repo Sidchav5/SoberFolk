@@ -8,13 +8,6 @@ import OnboardingScreen from './src/components/OnboardingScreen';
 import HeroSection from './src/components/HeroSection';
 import Benefits from './src/components/Benefits';
 import Footer from './src/components/Footer';
-import LoginScreen from './src/components/LoginScreen';
-import SignupScreen from './src/components/SignupScreen';
-import DriverScreen from './src/components/DriverScreen';
-import ConsumerHome from './src/components/ConsumerHome';
-import DriverFeedback from './src/components/DriverFeedback';
-import ConsumerFeedback from './src/components/ConsumerFeedback';
-import 'react-native-reanimated';
 type RootStackParamList = {
   Home: undefined;
   Login: undefined;
@@ -26,6 +19,36 @@ type RootStackParamList = {
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
+
+const LoginScreenRoute = (props: any) => {
+  const Screen = require('./src/components/LoginScreen').default;
+  return <Screen {...props} />;
+};
+
+const SignupScreenRoute = (props: any) => {
+  const Screen = require('./src/components/SignupScreen').default;
+  return <Screen {...props} />;
+};
+
+const DriverScreenRoute = (props: any) => {
+  const Screen = require('./src/components/DriverScreen').default;
+  return <Screen {...props} />;
+};
+
+const ConsumerHomeRoute = (props: any) => {
+  const Screen = require('./src/components/ConsumerHome').default;
+  return <Screen {...props} />;
+};
+
+const DriverFeedbackRoute = (props: any) => {
+  const Screen = require('./src/components/DriverFeedback').default;
+  return <Screen {...props} />;
+};
+
+const ConsumerFeedbackRoute = (props: any) => {
+  const Screen = require('./src/components/ConsumerFeedback').default;
+  return <Screen {...props} />;
+};
 
 const App: React.FC = () => {
   const [showOnboarding, setShowOnboarding] = useState<boolean>(false);
@@ -121,12 +144,12 @@ const App: React.FC = () => {
           )}
         </Stack.Screen>
 
-        <Stack.Screen name="Login" component={LoginScreen} />
-        <Stack.Screen name="Signup" component={SignupScreen} />
-        <Stack.Screen name="DriverScreen" component={DriverScreen} />
-        <Stack.Screen name="ConsumerHome" component={ConsumerHome} />
-        <Stack.Screen name="DriverFeedback" component={DriverFeedback} />
-<Stack.Screen name="ConsumerFeedback" component={ConsumerFeedback} />
+        <Stack.Screen name="Login" component={LoginScreenRoute} />
+        <Stack.Screen name="Signup" component={SignupScreenRoute} />
+        <Stack.Screen name="DriverScreen" component={DriverScreenRoute} />
+        <Stack.Screen name="ConsumerHome" component={ConsumerHomeRoute} />
+        <Stack.Screen name="DriverFeedback" component={DriverFeedbackRoute} />
+        <Stack.Screen name="ConsumerFeedback" component={ConsumerFeedbackRoute} />
       </Stack.Navigator>
     </NavigationContainer>
   );

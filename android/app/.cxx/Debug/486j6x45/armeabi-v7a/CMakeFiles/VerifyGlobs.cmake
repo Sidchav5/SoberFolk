@@ -12,156 +12,6 @@ if(NOT "${NEW_GLOB}" STREQUAL "${OLD_GLOB}")
   file(TOUCH_NOCREATE "E:/Android/SoberFolk/android/app/.cxx/Debug/486j6x45/armeabi-v7a/CMakeFiles/cmake.verify_globs")
 endif()
 
-# react_codegen_SRCS at E:/Android/SoberFolk/node_modules/@react-native-async-storage/async-storage/android/build/generated/source/codegen/jni/CMakeLists.txt:9 (file)
-file(GLOB NEW_GLOB LIST_DIRECTORIES true "E:/Android/SoberFolk/node_modules/@react-native-async-storage/async-storage/android/build/generated/source/codegen/jni/*.cpp")
-set(OLD_GLOB
-  "E:/Android/SoberFolk/node_modules/@react-native-async-storage/async-storage/android/build/generated/source/codegen/jni/rnasyncstorage-generated.cpp"
-  )
-if(NOT "${NEW_GLOB}" STREQUAL "${OLD_GLOB}")
-  message("-- GLOB mismatch!")
-  file(TOUCH_NOCREATE "E:/Android/SoberFolk/android/app/.cxx/Debug/486j6x45/armeabi-v7a/CMakeFiles/cmake.verify_globs")
-endif()
-
-# react_codegen_SRCS at E:/Android/SoberFolk/node_modules/@react-native-async-storage/async-storage/android/build/generated/source/codegen/jni/CMakeLists.txt:9 (file)
-file(GLOB NEW_GLOB LIST_DIRECTORIES true "E:/Android/SoberFolk/node_modules/@react-native-async-storage/async-storage/android/build/generated/source/codegen/jni/react/renderer/components/rnasyncstorage/*.cpp")
-set(OLD_GLOB
-  "E:/Android/SoberFolk/node_modules/@react-native-async-storage/async-storage/android/build/generated/source/codegen/jni/react/renderer/components/rnasyncstorage/ComponentDescriptors.cpp"
-  "E:/Android/SoberFolk/node_modules/@react-native-async-storage/async-storage/android/build/generated/source/codegen/jni/react/renderer/components/rnasyncstorage/EventEmitters.cpp"
-  "E:/Android/SoberFolk/node_modules/@react-native-async-storage/async-storage/android/build/generated/source/codegen/jni/react/renderer/components/rnasyncstorage/Props.cpp"
-  "E:/Android/SoberFolk/node_modules/@react-native-async-storage/async-storage/android/build/generated/source/codegen/jni/react/renderer/components/rnasyncstorage/ShadowNodes.cpp"
-  "E:/Android/SoberFolk/node_modules/@react-native-async-storage/async-storage/android/build/generated/source/codegen/jni/react/renderer/components/rnasyncstorage/States.cpp"
-  "E:/Android/SoberFolk/node_modules/@react-native-async-storage/async-storage/android/build/generated/source/codegen/jni/react/renderer/components/rnasyncstorage/rnasyncstorageJSI-generated.cpp"
-  )
-if(NOT "${NEW_GLOB}" STREQUAL "${OLD_GLOB}")
-  message("-- GLOB mismatch!")
-  file(TOUCH_NOCREATE "E:/Android/SoberFolk/android/app/.cxx/Debug/486j6x45/armeabi-v7a/CMakeFiles/cmake.verify_globs")
-endif()
-
-# react_codegen_SRCS at E:/Android/SoberFolk/node_modules/@react-native-community/geolocation/android/build/generated/source/codegen/jni/CMakeLists.txt:9 (file)
-file(GLOB NEW_GLOB LIST_DIRECTORIES true "E:/Android/SoberFolk/node_modules/@react-native-community/geolocation/android/build/generated/source/codegen/jni/*.cpp")
-set(OLD_GLOB
-  "E:/Android/SoberFolk/node_modules/@react-native-community/geolocation/android/build/generated/source/codegen/jni/RNCGeolocationSpec-generated.cpp"
-  )
-if(NOT "${NEW_GLOB}" STREQUAL "${OLD_GLOB}")
-  message("-- GLOB mismatch!")
-  file(TOUCH_NOCREATE "E:/Android/SoberFolk/android/app/.cxx/Debug/486j6x45/armeabi-v7a/CMakeFiles/cmake.verify_globs")
-endif()
-
-# react_codegen_SRCS at E:/Android/SoberFolk/node_modules/@react-native-community/geolocation/android/build/generated/source/codegen/jni/CMakeLists.txt:9 (file)
-file(GLOB NEW_GLOB LIST_DIRECTORIES true "E:/Android/SoberFolk/node_modules/@react-native-community/geolocation/android/build/generated/source/codegen/jni/react/renderer/components/RNCGeolocationSpec/*.cpp")
-set(OLD_GLOB
-  "E:/Android/SoberFolk/node_modules/@react-native-community/geolocation/android/build/generated/source/codegen/jni/react/renderer/components/RNCGeolocationSpec/ComponentDescriptors.cpp"
-  "E:/Android/SoberFolk/node_modules/@react-native-community/geolocation/android/build/generated/source/codegen/jni/react/renderer/components/RNCGeolocationSpec/EventEmitters.cpp"
-  "E:/Android/SoberFolk/node_modules/@react-native-community/geolocation/android/build/generated/source/codegen/jni/react/renderer/components/RNCGeolocationSpec/Props.cpp"
-  "E:/Android/SoberFolk/node_modules/@react-native-community/geolocation/android/build/generated/source/codegen/jni/react/renderer/components/RNCGeolocationSpec/RNCGeolocationSpecJSI-generated.cpp"
-  "E:/Android/SoberFolk/node_modules/@react-native-community/geolocation/android/build/generated/source/codegen/jni/react/renderer/components/RNCGeolocationSpec/ShadowNodes.cpp"
-  "E:/Android/SoberFolk/node_modules/@react-native-community/geolocation/android/build/generated/source/codegen/jni/react/renderer/components/RNCGeolocationSpec/States.cpp"
-  )
-if(NOT "${NEW_GLOB}" STREQUAL "${OLD_GLOB}")
-  message("-- GLOB mismatch!")
-  file(TOUCH_NOCREATE "E:/Android/SoberFolk/android/app/.cxx/Debug/486j6x45/armeabi-v7a/CMakeFiles/cmake.verify_globs")
-endif()
-
-# react_codegen_SRCS at E:/Android/SoberFolk/node_modules/@react-native-vector-icons/material-icons/android/build/generated/source/codegen/jni/CMakeLists.txt:9 (file)
-file(GLOB NEW_GLOB LIST_DIRECTORIES true "E:/Android/SoberFolk/node_modules/@react-native-vector-icons/material-icons/android/build/generated/source/codegen/jni/*.cpp")
-set(OLD_GLOB
-  "E:/Android/SoberFolk/node_modules/@react-native-vector-icons/material-icons/android/build/generated/source/codegen/jni/VectorIconsMaterialIcons-generated.cpp"
-  )
-if(NOT "${NEW_GLOB}" STREQUAL "${OLD_GLOB}")
-  message("-- GLOB mismatch!")
-  file(TOUCH_NOCREATE "E:/Android/SoberFolk/android/app/.cxx/Debug/486j6x45/armeabi-v7a/CMakeFiles/cmake.verify_globs")
-endif()
-
-# react_codegen_SRCS at E:/Android/SoberFolk/node_modules/@react-native-vector-icons/material-icons/android/build/generated/source/codegen/jni/CMakeLists.txt:9 (file)
-file(GLOB NEW_GLOB LIST_DIRECTORIES true "E:/Android/SoberFolk/node_modules/@react-native-vector-icons/material-icons/android/build/generated/source/codegen/jni/react/renderer/components/VectorIconsMaterialIcons/*.cpp")
-set(OLD_GLOB
-  "E:/Android/SoberFolk/node_modules/@react-native-vector-icons/material-icons/android/build/generated/source/codegen/jni/react/renderer/components/VectorIconsMaterialIcons/ComponentDescriptors.cpp"
-  "E:/Android/SoberFolk/node_modules/@react-native-vector-icons/material-icons/android/build/generated/source/codegen/jni/react/renderer/components/VectorIconsMaterialIcons/EventEmitters.cpp"
-  "E:/Android/SoberFolk/node_modules/@react-native-vector-icons/material-icons/android/build/generated/source/codegen/jni/react/renderer/components/VectorIconsMaterialIcons/Props.cpp"
-  "E:/Android/SoberFolk/node_modules/@react-native-vector-icons/material-icons/android/build/generated/source/codegen/jni/react/renderer/components/VectorIconsMaterialIcons/ShadowNodes.cpp"
-  "E:/Android/SoberFolk/node_modules/@react-native-vector-icons/material-icons/android/build/generated/source/codegen/jni/react/renderer/components/VectorIconsMaterialIcons/States.cpp"
-  "E:/Android/SoberFolk/node_modules/@react-native-vector-icons/material-icons/android/build/generated/source/codegen/jni/react/renderer/components/VectorIconsMaterialIcons/VectorIconsMaterialIconsJSI-generated.cpp"
-  )
-if(NOT "${NEW_GLOB}" STREQUAL "${OLD_GLOB}")
-  message("-- GLOB mismatch!")
-  file(TOUCH_NOCREATE "E:/Android/SoberFolk/android/app/.cxx/Debug/486j6x45/armeabi-v7a/CMakeFiles/cmake.verify_globs")
-endif()
-
-# react_codegen_SRCS at E:/Android/SoberFolk/node_modules/react-native-contacts/android/build/generated/source/codegen/jni/CMakeLists.txt:9 (file)
-file(GLOB NEW_GLOB LIST_DIRECTORIES true "E:/Android/SoberFolk/node_modules/react-native-contacts/android/build/generated/source/codegen/jni/*.cpp")
-set(OLD_GLOB
-  "E:/Android/SoberFolk/node_modules/react-native-contacts/android/build/generated/source/codegen/jni/RNContactsSpec-generated.cpp"
-  )
-if(NOT "${NEW_GLOB}" STREQUAL "${OLD_GLOB}")
-  message("-- GLOB mismatch!")
-  file(TOUCH_NOCREATE "E:/Android/SoberFolk/android/app/.cxx/Debug/486j6x45/armeabi-v7a/CMakeFiles/cmake.verify_globs")
-endif()
-
-# react_codegen_SRCS at E:/Android/SoberFolk/node_modules/react-native-contacts/android/build/generated/source/codegen/jni/CMakeLists.txt:9 (file)
-file(GLOB NEW_GLOB LIST_DIRECTORIES true "E:/Android/SoberFolk/node_modules/react-native-contacts/android/build/generated/source/codegen/jni/react/renderer/components/RNContactsSpec/*.cpp")
-set(OLD_GLOB
-  "E:/Android/SoberFolk/node_modules/react-native-contacts/android/build/generated/source/codegen/jni/react/renderer/components/RNContactsSpec/ComponentDescriptors.cpp"
-  "E:/Android/SoberFolk/node_modules/react-native-contacts/android/build/generated/source/codegen/jni/react/renderer/components/RNContactsSpec/EventEmitters.cpp"
-  "E:/Android/SoberFolk/node_modules/react-native-contacts/android/build/generated/source/codegen/jni/react/renderer/components/RNContactsSpec/Props.cpp"
-  "E:/Android/SoberFolk/node_modules/react-native-contacts/android/build/generated/source/codegen/jni/react/renderer/components/RNContactsSpec/RNContactsSpecJSI-generated.cpp"
-  "E:/Android/SoberFolk/node_modules/react-native-contacts/android/build/generated/source/codegen/jni/react/renderer/components/RNContactsSpec/ShadowNodes.cpp"
-  "E:/Android/SoberFolk/node_modules/react-native-contacts/android/build/generated/source/codegen/jni/react/renderer/components/RNContactsSpec/States.cpp"
-  )
-if(NOT "${NEW_GLOB}" STREQUAL "${OLD_GLOB}")
-  message("-- GLOB mismatch!")
-  file(TOUCH_NOCREATE "E:/Android/SoberFolk/android/app/.cxx/Debug/486j6x45/armeabi-v7a/CMakeFiles/cmake.verify_globs")
-endif()
-
-# react_codegen_SRCS at E:/Android/SoberFolk/node_modules/react-native-gesture-handler/android/build/generated/source/codegen/jni/CMakeLists.txt:9 (file)
-file(GLOB NEW_GLOB LIST_DIRECTORIES true "E:/Android/SoberFolk/node_modules/react-native-gesture-handler/android/build/generated/source/codegen/jni/*.cpp")
-set(OLD_GLOB
-  "E:/Android/SoberFolk/node_modules/react-native-gesture-handler/android/build/generated/source/codegen/jni/rngesturehandler_codegen-generated.cpp"
-  )
-if(NOT "${NEW_GLOB}" STREQUAL "${OLD_GLOB}")
-  message("-- GLOB mismatch!")
-  file(TOUCH_NOCREATE "E:/Android/SoberFolk/android/app/.cxx/Debug/486j6x45/armeabi-v7a/CMakeFiles/cmake.verify_globs")
-endif()
-
-# react_codegen_SRCS at E:/Android/SoberFolk/node_modules/react-native-gesture-handler/android/build/generated/source/codegen/jni/CMakeLists.txt:9 (file)
-file(GLOB NEW_GLOB LIST_DIRECTORIES true "E:/Android/SoberFolk/node_modules/react-native-gesture-handler/android/build/generated/source/codegen/jni/react/renderer/components/rngesturehandler_codegen/*.cpp")
-set(OLD_GLOB
-  "E:/Android/SoberFolk/node_modules/react-native-gesture-handler/android/build/generated/source/codegen/jni/react/renderer/components/rngesturehandler_codegen/ComponentDescriptors.cpp"
-  "E:/Android/SoberFolk/node_modules/react-native-gesture-handler/android/build/generated/source/codegen/jni/react/renderer/components/rngesturehandler_codegen/EventEmitters.cpp"
-  "E:/Android/SoberFolk/node_modules/react-native-gesture-handler/android/build/generated/source/codegen/jni/react/renderer/components/rngesturehandler_codegen/Props.cpp"
-  "E:/Android/SoberFolk/node_modules/react-native-gesture-handler/android/build/generated/source/codegen/jni/react/renderer/components/rngesturehandler_codegen/ShadowNodes.cpp"
-  "E:/Android/SoberFolk/node_modules/react-native-gesture-handler/android/build/generated/source/codegen/jni/react/renderer/components/rngesturehandler_codegen/States.cpp"
-  "E:/Android/SoberFolk/node_modules/react-native-gesture-handler/android/build/generated/source/codegen/jni/react/renderer/components/rngesturehandler_codegen/rngesturehandler_codegenJSI-generated.cpp"
-  )
-if(NOT "${NEW_GLOB}" STREQUAL "${OLD_GLOB}")
-  message("-- GLOB mismatch!")
-  file(TOUCH_NOCREATE "E:/Android/SoberFolk/android/app/.cxx/Debug/486j6x45/armeabi-v7a/CMakeFiles/cmake.verify_globs")
-endif()
-
-# react_codegen_SRCS at E:/Android/SoberFolk/node_modules/react-native-image-picker/android/build/generated/source/codegen/jni/CMakeLists.txt:9 (file)
-file(GLOB NEW_GLOB LIST_DIRECTORIES true "E:/Android/SoberFolk/node_modules/react-native-image-picker/android/build/generated/source/codegen/jni/*.cpp")
-set(OLD_GLOB
-  "E:/Android/SoberFolk/node_modules/react-native-image-picker/android/build/generated/source/codegen/jni/RNImagePickerSpec-generated.cpp"
-  )
-if(NOT "${NEW_GLOB}" STREQUAL "${OLD_GLOB}")
-  message("-- GLOB mismatch!")
-  file(TOUCH_NOCREATE "E:/Android/SoberFolk/android/app/.cxx/Debug/486j6x45/armeabi-v7a/CMakeFiles/cmake.verify_globs")
-endif()
-
-# react_codegen_SRCS at E:/Android/SoberFolk/node_modules/react-native-image-picker/android/build/generated/source/codegen/jni/CMakeLists.txt:9 (file)
-file(GLOB NEW_GLOB LIST_DIRECTORIES true "E:/Android/SoberFolk/node_modules/react-native-image-picker/android/build/generated/source/codegen/jni/react/renderer/components/RNImagePickerSpec/*.cpp")
-set(OLD_GLOB
-  "E:/Android/SoberFolk/node_modules/react-native-image-picker/android/build/generated/source/codegen/jni/react/renderer/components/RNImagePickerSpec/ComponentDescriptors.cpp"
-  "E:/Android/SoberFolk/node_modules/react-native-image-picker/android/build/generated/source/codegen/jni/react/renderer/components/RNImagePickerSpec/EventEmitters.cpp"
-  "E:/Android/SoberFolk/node_modules/react-native-image-picker/android/build/generated/source/codegen/jni/react/renderer/components/RNImagePickerSpec/Props.cpp"
-  "E:/Android/SoberFolk/node_modules/react-native-image-picker/android/build/generated/source/codegen/jni/react/renderer/components/RNImagePickerSpec/RNImagePickerSpecJSI-generated.cpp"
-  "E:/Android/SoberFolk/node_modules/react-native-image-picker/android/build/generated/source/codegen/jni/react/renderer/components/RNImagePickerSpec/ShadowNodes.cpp"
-  "E:/Android/SoberFolk/node_modules/react-native-image-picker/android/build/generated/source/codegen/jni/react/renderer/components/RNImagePickerSpec/States.cpp"
-  )
-if(NOT "${NEW_GLOB}" STREQUAL "${OLD_GLOB}")
-  message("-- GLOB mismatch!")
-  file(TOUCH_NOCREATE "E:/Android/SoberFolk/android/app/.cxx/Debug/486j6x45/armeabi-v7a/CMakeFiles/cmake.verify_globs")
-endif()
-
 # react_codegen_SRCS at E:/Android/SoberFolk/node_modules/react-native-maps/android/src/main/jni/CMakeLists.txt:9 (file)
 file(GLOB NEW_GLOB LIST_DIRECTORIES true "E:/Android/SoberFolk/node_modules/react-native-maps/android/src/main/jni/*.cpp")
 set(OLD_GLOB
@@ -181,31 +31,6 @@ set(OLD_GLOB
   "E:/Android/SoberFolk/node_modules/react-native-maps/android/src/main/jni/react/renderer/components/RNMapsSpecs/RNMapsSpecsJSI-generated.cpp"
   "E:/Android/SoberFolk/node_modules/react-native-maps/android/src/main/jni/react/renderer/components/RNMapsSpecs/ShadowNodes.cpp"
   "E:/Android/SoberFolk/node_modules/react-native-maps/android/src/main/jni/react/renderer/components/RNMapsSpecs/States.cpp"
-  )
-if(NOT "${NEW_GLOB}" STREQUAL "${OLD_GLOB}")
-  message("-- GLOB mismatch!")
-  file(TOUCH_NOCREATE "E:/Android/SoberFolk/android/app/.cxx/Debug/486j6x45/armeabi-v7a/CMakeFiles/cmake.verify_globs")
-endif()
-
-# react_codegen_SRCS at E:/Android/SoberFolk/node_modules/react-native-reanimated/android/build/generated/source/codegen/jni/CMakeLists.txt:9 (file)
-file(GLOB NEW_GLOB LIST_DIRECTORIES true "E:/Android/SoberFolk/node_modules/react-native-reanimated/android/build/generated/source/codegen/jni/*.cpp")
-set(OLD_GLOB
-  "E:/Android/SoberFolk/node_modules/react-native-reanimated/android/build/generated/source/codegen/jni/rnreanimated-generated.cpp"
-  )
-if(NOT "${NEW_GLOB}" STREQUAL "${OLD_GLOB}")
-  message("-- GLOB mismatch!")
-  file(TOUCH_NOCREATE "E:/Android/SoberFolk/android/app/.cxx/Debug/486j6x45/armeabi-v7a/CMakeFiles/cmake.verify_globs")
-endif()
-
-# react_codegen_SRCS at E:/Android/SoberFolk/node_modules/react-native-reanimated/android/build/generated/source/codegen/jni/CMakeLists.txt:9 (file)
-file(GLOB NEW_GLOB LIST_DIRECTORIES true "E:/Android/SoberFolk/node_modules/react-native-reanimated/android/build/generated/source/codegen/jni/react/renderer/components/rnreanimated/*.cpp")
-set(OLD_GLOB
-  "E:/Android/SoberFolk/node_modules/react-native-reanimated/android/build/generated/source/codegen/jni/react/renderer/components/rnreanimated/ComponentDescriptors.cpp"
-  "E:/Android/SoberFolk/node_modules/react-native-reanimated/android/build/generated/source/codegen/jni/react/renderer/components/rnreanimated/EventEmitters.cpp"
-  "E:/Android/SoberFolk/node_modules/react-native-reanimated/android/build/generated/source/codegen/jni/react/renderer/components/rnreanimated/Props.cpp"
-  "E:/Android/SoberFolk/node_modules/react-native-reanimated/android/build/generated/source/codegen/jni/react/renderer/components/rnreanimated/ShadowNodes.cpp"
-  "E:/Android/SoberFolk/node_modules/react-native-reanimated/android/build/generated/source/codegen/jni/react/renderer/components/rnreanimated/States.cpp"
-  "E:/Android/SoberFolk/node_modules/react-native-reanimated/android/build/generated/source/codegen/jni/react/renderer/components/rnreanimated/rnreanimatedJSI-generated.cpp"
   )
 if(NOT "${NEW_GLOB}" STREQUAL "${OLD_GLOB}")
   message("-- GLOB mismatch!")
@@ -235,7 +60,6 @@ endif()
 # LIB_CODEGEN_SRCS at E:/Android/SoberFolk/node_modules/react-native-safe-area-context/android/src/main/jni/CMakeLists.txt:13 (file)
 file(GLOB NEW_GLOB LIST_DIRECTORIES true "E:/Android/SoberFolk/node_modules/react-native-safe-area-context/android/src/main/jni/../../../build/generated/source/codegen/jni/*.cpp")
 set(OLD_GLOB
-  "E:/Android/SoberFolk/node_modules/react-native-safe-area-context/android/src/main/jni/../../../build/generated/source/codegen/jni/safeareacontext-generated.cpp"
   )
 if(NOT "${NEW_GLOB}" STREQUAL "${OLD_GLOB}")
   message("-- GLOB mismatch!")
@@ -245,12 +69,6 @@ endif()
 # LIB_CODEGEN_SRCS at E:/Android/SoberFolk/node_modules/react-native-safe-area-context/android/src/main/jni/CMakeLists.txt:13 (file)
 file(GLOB NEW_GLOB LIST_DIRECTORIES true "E:/Android/SoberFolk/node_modules/react-native-safe-area-context/android/src/main/jni/../../../build/generated/source/codegen/jni/react/renderer/components/safeareacontext/*.cpp")
 set(OLD_GLOB
-  "E:/Android/SoberFolk/node_modules/react-native-safe-area-context/android/src/main/jni/../../../build/generated/source/codegen/jni/react/renderer/components/safeareacontext/ComponentDescriptors.cpp"
-  "E:/Android/SoberFolk/node_modules/react-native-safe-area-context/android/src/main/jni/../../../build/generated/source/codegen/jni/react/renderer/components/safeareacontext/EventEmitters.cpp"
-  "E:/Android/SoberFolk/node_modules/react-native-safe-area-context/android/src/main/jni/../../../build/generated/source/codegen/jni/react/renderer/components/safeareacontext/Props.cpp"
-  "E:/Android/SoberFolk/node_modules/react-native-safe-area-context/android/src/main/jni/../../../build/generated/source/codegen/jni/react/renderer/components/safeareacontext/ShadowNodes.cpp"
-  "E:/Android/SoberFolk/node_modules/react-native-safe-area-context/android/src/main/jni/../../../build/generated/source/codegen/jni/react/renderer/components/safeareacontext/States.cpp"
-  "E:/Android/SoberFolk/node_modules/react-native-safe-area-context/android/src/main/jni/../../../build/generated/source/codegen/jni/react/renderer/components/safeareacontext/safeareacontextJSI-generated.cpp"
   )
 if(NOT "${NEW_GLOB}" STREQUAL "${OLD_GLOB}")
   message("-- GLOB mismatch!")
@@ -301,37 +119,6 @@ endif()
 # LIB_CODEGEN_SRCS at E:/Android/SoberFolk/node_modules/react-native-screens/android/src/main/jni/CMakeLists.txt:24 (file)
 file(GLOB NEW_GLOB LIST_DIRECTORIES true "E:/Android/SoberFolk/node_modules/react-native-screens/android/src/main/jni/../../../build/generated/source/codegen/jni/react/renderer/components/rnscreens/*.cpp")
 set(OLD_GLOB
-  "E:/Android/SoberFolk/node_modules/react-native-screens/android/src/main/jni/../../../build/generated/source/codegen/jni/react/renderer/components/rnscreens/ComponentDescriptors.cpp"
-  "E:/Android/SoberFolk/node_modules/react-native-screens/android/src/main/jni/../../../build/generated/source/codegen/jni/react/renderer/components/rnscreens/EventEmitters.cpp"
-  "E:/Android/SoberFolk/node_modules/react-native-screens/android/src/main/jni/../../../build/generated/source/codegen/jni/react/renderer/components/rnscreens/Props.cpp"
-  "E:/Android/SoberFolk/node_modules/react-native-screens/android/src/main/jni/../../../build/generated/source/codegen/jni/react/renderer/components/rnscreens/ShadowNodes.cpp"
-  "E:/Android/SoberFolk/node_modules/react-native-screens/android/src/main/jni/../../../build/generated/source/codegen/jni/react/renderer/components/rnscreens/States.cpp"
-  "E:/Android/SoberFolk/node_modules/react-native-screens/android/src/main/jni/../../../build/generated/source/codegen/jni/react/renderer/components/rnscreens/rnscreensJSI-generated.cpp"
-  )
-if(NOT "${NEW_GLOB}" STREQUAL "${OLD_GLOB}")
-  message("-- GLOB mismatch!")
-  file(TOUCH_NOCREATE "E:/Android/SoberFolk/android/app/.cxx/Debug/486j6x45/armeabi-v7a/CMakeFiles/cmake.verify_globs")
-endif()
-
-# react_codegen_SRCS at E:/Android/SoberFolk/node_modules/react-native-worklets/android/build/generated/source/codegen/jni/CMakeLists.txt:9 (file)
-file(GLOB NEW_GLOB LIST_DIRECTORIES true "E:/Android/SoberFolk/node_modules/react-native-worklets/android/build/generated/source/codegen/jni/*.cpp")
-set(OLD_GLOB
-  "E:/Android/SoberFolk/node_modules/react-native-worklets/android/build/generated/source/codegen/jni/rnworklets-generated.cpp"
-  )
-if(NOT "${NEW_GLOB}" STREQUAL "${OLD_GLOB}")
-  message("-- GLOB mismatch!")
-  file(TOUCH_NOCREATE "E:/Android/SoberFolk/android/app/.cxx/Debug/486j6x45/armeabi-v7a/CMakeFiles/cmake.verify_globs")
-endif()
-
-# react_codegen_SRCS at E:/Android/SoberFolk/node_modules/react-native-worklets/android/build/generated/source/codegen/jni/CMakeLists.txt:9 (file)
-file(GLOB NEW_GLOB LIST_DIRECTORIES true "E:/Android/SoberFolk/node_modules/react-native-worklets/android/build/generated/source/codegen/jni/react/renderer/components/rnworklets/*.cpp")
-set(OLD_GLOB
-  "E:/Android/SoberFolk/node_modules/react-native-worklets/android/build/generated/source/codegen/jni/react/renderer/components/rnworklets/ComponentDescriptors.cpp"
-  "E:/Android/SoberFolk/node_modules/react-native-worklets/android/build/generated/source/codegen/jni/react/renderer/components/rnworklets/EventEmitters.cpp"
-  "E:/Android/SoberFolk/node_modules/react-native-worklets/android/build/generated/source/codegen/jni/react/renderer/components/rnworklets/Props.cpp"
-  "E:/Android/SoberFolk/node_modules/react-native-worklets/android/build/generated/source/codegen/jni/react/renderer/components/rnworklets/ShadowNodes.cpp"
-  "E:/Android/SoberFolk/node_modules/react-native-worklets/android/build/generated/source/codegen/jni/react/renderer/components/rnworklets/States.cpp"
-  "E:/Android/SoberFolk/node_modules/react-native-worklets/android/build/generated/source/codegen/jni/react/renderer/components/rnworklets/rnworkletsJSI-generated.cpp"
   )
 if(NOT "${NEW_GLOB}" STREQUAL "${OLD_GLOB}")
   message("-- GLOB mismatch!")

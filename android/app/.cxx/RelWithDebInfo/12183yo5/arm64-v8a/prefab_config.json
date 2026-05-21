@@ -2,10 +2,10 @@
   "enabled": true,
   "prefabPath": "C:\\GradleHomeSoberFolk\\caches\\modules-2\\files-2.1\\com.google.prefab\\cli\\2.1.0\\aa32fec809c44fa531f01dcfb739b5b3304d3050\\cli-2.1.0-all.jar",
   "packages": [
-    "C:\\GradleHomeSoberFolk\\caches\\8.14.3\\transforms\\9771b5709b4fcc567280383da8cb1c33\\transformed\\react-android-0.81.5-release\\prefab",
-    "E:\\Android\\SoberFolk\\node_modules\\react-native-reanimated\\android\\build\\intermediates\\prefab_package\\release\\prefab",
     "E:\\Android\\SoberFolk\\node_modules\\react-native-worklets\\android\\build\\intermediates\\prefab_package\\release\\prefab",
-    "C:\\GradleHomeSoberFolk\\caches\\8.14.3\\transforms\\cdc1c6fc4522dd8e986b4c663c544a25\\transformed\\hermes-android-0.81.5-release\\prefab",
+    "C:\\GradleHomeSoberFolk\\caches\\8.14.3\\transforms\\4743eb96ac2397eaefc36a6f2fa42f48\\transformed\\react-android-0.81.6-release\\prefab",
+    "E:\\Android\\SoberFolk\\node_modules\\react-native-reanimated\\android\\build\\intermediates\\prefab_package\\release\\prefab",
+    "C:\\GradleHomeSoberFolk\\caches\\8.14.3\\transforms\\635f02f56b4dd28a5c19a015b2a7f016\\transformed\\hermes-android-0.81.6-release\\prefab",
     "C:\\GradleHomeSoberFolk\\caches\\8.14.3\\transforms\\48f32c88ab848eeaa4d6425b771aa34b\\transformed\\fbjni-0.7.0\\prefab"
   ]
 }

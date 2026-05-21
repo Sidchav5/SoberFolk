@@ -7,6 +7,7 @@
     "E:\\Android\\SoberFolk\\node_modules\\react-native-gesture-handler\\android\\build\\generated\\source\\codegen\\jni\\CMakeLists.txt",
     "E:\\Android\\SoberFolk\\node_modules\\react-native-image-picker\\android\\build\\generated\\source\\codegen\\jni\\CMakeLists.txt",
     "E:\\Android\\SoberFolk\\node_modules\\react-native-maps\\android\\src\\main\\jni\\CMakeLists.txt",
+    "E:\\Android\\SoberFolk\\node_modules\\react-native-razorpay\\android\\build\\generated\\source\\codegen\\jni\\CMakeLists.txt",
     "E:\\Android\\SoberFolk\\node_modules\\react-native-reanimated\\android\\build\\generated\\source\\codegen\\jni\\CMakeLists.txt",
     "E:\\Android\\SoberFolk\\node_modules\\react-native-safe-area-context\\android\\src\\main\\jni\\CMakeLists.txt",
     "E:\\Android\\SoberFolk\\node_modules\\react-native-screens\\android\\src\\main\\jni\\CMakeLists.txt",
@@ -37,8 +38,8 @@
         "E:\\Android\\SoberFolk\\android\\app\\build\\intermediates\\cxx\\RelWithDebInfo\\12183yo5\\obj\\arm64-v8a\\libreact_codegen_safeareacontext.so",
         "E:\\Android\\SoberFolk\\android\\app\\build\\intermediates\\cxx\\RelWithDebInfo\\12183yo5\\obj\\arm64-v8a\\libreact_codegen_rnscreens.so",
         "C:\\GradleHomeSoberFolk\\caches\\8.14.3\\transforms\\48f32c88ab848eeaa4d6425b771aa34b\\transformed\\fbjni-0.7.0\\prefab\\modules\\fbjni\\libs\\android.arm64-v8a\\libfbjni.so",
-        "C:\\GradleHomeSoberFolk\\caches\\8.14.3\\transforms\\9771b5709b4fcc567280383da8cb1c33\\transformed\\react-android-0.81.5-release\\prefab\\modules\\jsi\\libs\\android.arm64-v8a\\libjsi.so",
-        "C:\\GradleHomeSoberFolk\\caches\\8.14.3\\transforms\\9771b5709b4fcc567280383da8cb1c33\\transformed\\react-android-0.81.5-release\\prefab\\modules\\reactnative\\libs\\android.arm64-v8a\\libreactnative.so"
+        "C:\\GradleHomeSoberFolk\\caches\\8.14.3\\transforms\\4743eb96ac2397eaefc36a6f2fa42f48\\transformed\\react-android-0.81.6-release\\prefab\\modules\\jsi\\libs\\android.arm64-v8a\\libjsi.so",
+        "C:\\GradleHomeSoberFolk\\caches\\8.14.3\\transforms\\4743eb96ac2397eaefc36a6f2fa42f48\\transformed\\react-android-0.81.6-release\\prefab\\modules\\reactnative\\libs\\android.arm64-v8a\\libreactnative.so"
       ]
     },
     "react_codegen_RNCGeolocationSpec::@1b959fcb56e23f7716ba": {
@@ -60,6 +61,11 @@
       "toolchain": "toolchain",
       "abi": "arm64-v8a",
       "artifactName": "react_codegen_RNMapsSpecs"
+    },
+    "react_codegen_RNRazorpayCheckoutSpec::@ba471378ee2eecf9e7b3": {
+      "toolchain": "toolchain",
+      "abi": "arm64-v8a",
+      "artifactName": "react_codegen_RNRazorpayCheckoutSpec"
     },
     "react_codegen_VectorIconsMaterialIcons::@31616434fa1e3b43792c": {
       "toolchain": "toolchain",
@@ -87,8 +93,8 @@
       "artifactName": "react_codegen_rnscreens",
       "output": "E:\\Android\\SoberFolk\\android\\app\\build\\intermediates\\cxx\\RelWithDebInfo\\12183yo5\\obj\\arm64-v8a\\libreact_codegen_rnscreens.so",
       "runtimeFiles": [
-        "C:\\GradleHomeSoberFolk\\caches\\8.14.3\\transforms\\9771b5709b4fcc567280383da8cb1c33\\transformed\\react-android-0.81.5-release\\prefab\\modules\\reactnative\\libs\\android.arm64-v8a\\libreactnative.so",
-        "C:\\GradleHomeSoberFolk\\caches\\8.14.3\\transforms\\9771b5709b4fcc567280383da8cb1c33\\transformed\\react-android-0.81.5-release\\prefab\\modules\\jsi\\libs\\android.arm64-v8a\\libjsi.so",
+        "C:\\GradleHomeSoberFolk\\caches\\8.14.3\\transforms\\4743eb96ac2397eaefc36a6f2fa42f48\\transformed\\react-android-0.81.6-release\\prefab\\modules\\reactnative\\libs\\android.arm64-v8a\\libreactnative.so",
+        "C:\\GradleHomeSoberFolk\\caches\\8.14.3\\transforms\\4743eb96ac2397eaefc36a6f2fa42f48\\transformed\\react-android-0.81.6-release\\prefab\\modules\\jsi\\libs\\android.arm64-v8a\\libjsi.so",
         "C:\\GradleHomeSoberFolk\\caches\\8.14.3\\transforms\\48f32c88ab848eeaa4d6425b771aa34b\\transformed\\fbjni-0.7.0\\prefab\\modules\\fbjni\\libs\\android.arm64-v8a\\libfbjni.so"
       ]
     },
@@ -104,8 +110,8 @@
       "output": "E:\\Android\\SoberFolk\\android\\app\\build\\intermediates\\cxx\\RelWithDebInfo\\12183yo5\\obj\\arm64-v8a\\libreact_codegen_safeareacontext.so",
       "runtimeFiles": [
         "C:\\GradleHomeSoberFolk\\caches\\8.14.3\\transforms\\48f32c88ab848eeaa4d6425b771aa34b\\transformed\\fbjni-0.7.0\\prefab\\modules\\fbjni\\libs\\android.arm64-v8a\\libfbjni.so",
-        "C:\\GradleHomeSoberFolk\\caches\\8.14.3\\transforms\\9771b5709b4fcc567280383da8cb1c33\\transformed\\react-android-0.81.5-release\\prefab\\modules\\jsi\\libs\\android.arm64-v8a\\libjsi.so",
-        "C:\\GradleHomeSoberFolk\\caches\\8.14.3\\transforms\\9771b5709b4fcc567280383da8cb1c33\\transformed\\react-android-0.81.5-release\\prefab\\modules\\reactnative\\libs\\android.arm64-v8a\\libreactnative.so"
+        "C:\\GradleHomeSoberFolk\\caches\\8.14.3\\transforms\\4743eb96ac2397eaefc36a6f2fa42f48\\transformed\\react-android-0.81.6-release\\prefab\\modules\\jsi\\libs\\android.arm64-v8a\\libjsi.so",
+        "C:\\GradleHomeSoberFolk\\caches\\8.14.3\\transforms\\4743eb96ac2397eaefc36a6f2fa42f48\\transformed\\react-android-0.81.6-release\\prefab\\modules\\reactnative\\libs\\android.arm64-v8a\\libreactnative.so"
       ]
     }
   },

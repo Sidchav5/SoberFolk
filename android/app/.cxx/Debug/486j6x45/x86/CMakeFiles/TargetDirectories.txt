@@ -22,6 +22,9 @@ E:/Android/SoberFolk/android/app/.cxx/Debug/486j6x45/x86/RNImagePickerSpec_autol
 E:/Android/SoberFolk/android/app/.cxx/Debug/486j6x45/x86/RNMapsSpecs_autolinked_build/CMakeFiles/react_codegen_RNMapsSpecs.dir
 E:/Android/SoberFolk/android/app/.cxx/Debug/486j6x45/x86/RNMapsSpecs_autolinked_build/CMakeFiles/edit_cache.dir
 E:/Android/SoberFolk/android/app/.cxx/Debug/486j6x45/x86/RNMapsSpecs_autolinked_build/CMakeFiles/rebuild_cache.dir
+E:/Android/SoberFolk/android/app/.cxx/Debug/486j6x45/x86/RNRazorpayCheckoutSpec_autolinked_build/CMakeFiles/react_codegen_RNRazorpayCheckoutSpec.dir
+E:/Android/SoberFolk/android/app/.cxx/Debug/486j6x45/x86/RNRazorpayCheckoutSpec_autolinked_build/CMakeFiles/edit_cache.dir
+E:/Android/SoberFolk/android/app/.cxx/Debug/486j6x45/x86/RNRazorpayCheckoutSpec_autolinked_build/CMakeFiles/rebuild_cache.dir
 E:/Android/SoberFolk/android/app/.cxx/Debug/486j6x45/x86/rnreanimated_autolinked_build/CMakeFiles/react_codegen_rnreanimated.dir
 E:/Android/SoberFolk/android/app/.cxx/Debug/486j6x45/x86/rnreanimated_autolinked_build/CMakeFiles/edit_cache.dir
 E:/Android/SoberFolk/android/app/.cxx/Debug/486j6x45/x86/rnreanimated_autolinked_build/CMakeFiles/rebuild_cache.dir

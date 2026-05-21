@@ -22,6 +22,9 @@ E:/Android/SoberFolk/android/app/.cxx/RelWithDebInfo/12183yo5/arm64-v8a/RNImageP
 E:/Android/SoberFolk/android/app/.cxx/RelWithDebInfo/12183yo5/arm64-v8a/RNMapsSpecs_autolinked_build/CMakeFiles/react_codegen_RNMapsSpecs.dir
 E:/Android/SoberFolk/android/app/.cxx/RelWithDebInfo/12183yo5/arm64-v8a/RNMapsSpecs_autolinked_build/CMakeFiles/edit_cache.dir
 E:/Android/SoberFolk/android/app/.cxx/RelWithDebInfo/12183yo5/arm64-v8a/RNMapsSpecs_autolinked_build/CMakeFiles/rebuild_cache.dir
+E:/Android/SoberFolk/android/app/.cxx/RelWithDebInfo/12183yo5/arm64-v8a/RNRazorpayCheckoutSpec_autolinked_build/CMakeFiles/react_codegen_RNRazorpayCheckoutSpec.dir
+E:/Android/SoberFolk/android/app/.cxx/RelWithDebInfo/12183yo5/arm64-v8a/RNRazorpayCheckoutSpec_autolinked_build/CMakeFiles/edit_cache.dir
+E:/Android/SoberFolk/android/app/.cxx/RelWithDebInfo/12183yo5/arm64-v8a/RNRazorpayCheckoutSpec_autolinked_build/CMakeFiles/rebuild_cache.dir
 E:/Android/SoberFolk/android/app/.cxx/RelWithDebInfo/12183yo5/arm64-v8a/rnreanimated_autolinked_build/CMakeFiles/react_codegen_rnreanimated.dir
 E:/Android/SoberFolk/android/app/.cxx/RelWithDebInfo/12183yo5/arm64-v8a/rnreanimated_autolinked_build/CMakeFiles/edit_cache.dir
 E:/Android/SoberFolk/android/app/.cxx/RelWithDebInfo/12183yo5/arm64-v8a/rnreanimated_autolinked_build/CMakeFiles/rebuild_cache.dir
