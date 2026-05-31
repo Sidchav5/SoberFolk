@@ -19,7 +19,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import Icon from '@react-native-vector-icons/material-icons';
 
 const { width } = Dimensions.get('window');
-const API_BASE_URL = "https://soberfolks-backend.onrender.com";
+import { API_BASE_URL } from "../config/api";
 
 const DriverFeedback: React.FC = () => {
   const navigation = useNavigation<any>();

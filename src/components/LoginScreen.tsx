@@ -20,7 +20,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import Icon from '@react-native-vector-icons/material-icons';
 
-const API_BASE_URL = "https://soberfolks-backend.onrender.com";
+import { API_BASE_URL } from "../config/api";
 const { width, height } = Dimensions.get('window');
 
 const LoginScreen: React.FC = () => {

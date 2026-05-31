@@ -47,7 +47,7 @@ import {
 } from "../services/wallet";
 
 const { width, height } = Dimensions.get('window');
-const API_BASE_URL = "https://soberfolks-backend.onrender.com";
+import { API_BASE_URL } from "../config/api";
 const LOCATION_UPLOAD_INTERVAL_MS = 10000;
 const { DriverLocationService } = NativeModules;
 const DEFAULT_REGION = {
@@ -849,6 +849,15 @@ const DriverScreen: React.FC = () => {
 
   // Request Location Permission
   const requestLocationPermission = async () => {
+    if (Platform.OS === 'ios') {
+      return new Promise<boolean>((resolve) => {
+        Geolocation.requestAuthorization(
+          () => resolve(true),
+          () => resolve(false)
+        );
+      });
+    }
+
     if (Platform.OS === 'android') {
       try {
         const granted = await PermissionsAndroid.requestMultiple([PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION, PermissionsAndroid.PERMISSIONS.ACCESS_BACKGROUND_LOCATION]); return granted[PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION] === PermissionsAndroid.RESULTS.GRANTED;

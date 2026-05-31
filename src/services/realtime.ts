@@ -1,6 +1,6 @@
 import { io, Socket } from "socket.io-client";
 
-const API_BASE_URL = "https://soberfolks-backend.onrender.com";
+import { API_BASE_URL } from "../config/api";
 
 let socketInstance: Socket | null = null;
 

@@ -15,7 +15,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import LinearGradient from 'react-native-linear-gradient';
 
-const API_BASE_URL = "https://soberfolks-backend.onrender.com";
+import { API_BASE_URL } from "../config/api";
 
 const CustomerFeedback: React.FC = () => {
   const navigation = useNavigation<any>();

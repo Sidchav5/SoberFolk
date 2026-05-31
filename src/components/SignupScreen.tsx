@@ -24,7 +24,7 @@ import {
   ImageLibraryOptions,
 } from 'react-native-image-picker';
 
-const API_BASE_URL = "https://soberfolks-backend.onrender.com";
+import { API_BASE_URL } from "../config/api";
 const { width, height } = Dimensions.get('window');
 
 const SignupScreen: React.FC = () => {

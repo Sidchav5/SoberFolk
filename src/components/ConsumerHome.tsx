@@ -41,7 +41,7 @@ const DEFAULT_REGION = {
   longitudeDelta: 0.01,
 };
 
-const API_BASE_URL = "https://soberfolks-backend.onrender.com";
+import { API_BASE_URL } from "../config/api";
 
 // Helper function to calculate distance
 const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
@@ -695,8 +695,18 @@ const ConsumerHome: React.FC = () => {
   // Request location permission
   const requestLocationPermission = async (): Promise<boolean> => {
     if (Platform.OS === "ios") {
-      setLocationPermissionGranted(true);
-      return true;
+      return new Promise((resolve) => {
+        Geolocation.requestAuthorization(
+          () => {
+            setLocationPermissionGranted(true);
+            resolve(true);
+          },
+          () => {
+            setLocationPermissionGranted(false);
+            resolve(false);
+          }
+        );
+      });
     }
 
     try {
@@ -1709,15 +1719,28 @@ const ConsumerHome: React.FC = () => {
 
   const openContactPicker = async (target: 'passenger' | 'safety') => {
     try {
-      const granted = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.READ_CONTACTS,
-        {
-          title: 'Contacts',
-          message: 'SoberFolk needs access to your contacts.',
-          buttonPositive: 'Allow'
-        }
-      );
-      if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+      let hasPermission = false;
+
+      if (Platform.OS === 'ios') {
+        const currentPermission = await Contacts.checkPermission();
+        const permission =
+          currentPermission === 'undefined'
+            ? await Contacts.requestPermission()
+            : currentPermission;
+        hasPermission = permission === 'authorized';
+      } else {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.READ_CONTACTS,
+          {
+            title: 'Contacts',
+            message: 'SoberFolk needs access to your contacts.',
+            buttonPositive: 'Allow'
+          }
+        );
+        hasPermission = granted === PermissionsAndroid.RESULTS.GRANTED;
+      }
+
+      if (hasPermission) {
         setTargetContactInput(target);
         setShowContactPicker(true);
         setIsContactsLoading(true);
